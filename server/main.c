@@ -13,6 +13,9 @@
 #include <server/player.h>
 #include <server/path.h>
 #include <utils/log.h>
+#include <utils/math.h>
+
+#include "option.h"
 
 #ifndef TEST
 
@@ -50,12 +53,14 @@ const char *usage(void)
  */
 int main(int argc, char *argv[])
 {
-    if (argc < 5)
-	die(usage(), argv[0]);
+    /* if (argc < 5) */
+    /* 	die(usage(), argv[0]); */
     path_init(argv[0]);
-    srand(time(NULL));
+    rand_seed();
     log_init(LOG_LEVEL, SERVER_LOG_FILE);
-    server_init(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), argv[1]);
+    struct opt opt;
+    parse_options(argc, argv, &opt);
+    server_init(opt.tile, opt.fish, opt.dim, opt.mapname);
     server_run();
     int winner = server_get_winner();
     log_print(PRINT_LOG__, "player %d also known as %s "

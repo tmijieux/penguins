@@ -13,10 +13,12 @@ set(PENG_SERVER_SRC
   player.c
   client.c
   path.c
-  main.c  )
+  main.c
+  option.c
+  )
   
 add_executable(penguins_server ${PENG_SERVER_SRC})
-target_link_libraries(penguins_server m dl graph log display list) 
+target_link_libraries(penguins_server m dl graph log display list)
 install(TARGETS penguins_server DESTINATION penguins)
 
 add_subdirectory(test)
