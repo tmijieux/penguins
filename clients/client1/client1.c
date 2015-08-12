@@ -92,7 +92,7 @@ int client_place_penguin(void)
 {
     int tile = 0; int max = -2;
     int l = list_size(client.tile_fish1);
-    for (int i = 1; i < l; i++) {
+    for (int i = 1; i <= l; i++) {
     	union iv ti;
     	ti.v = list_get_element(client.tile_fish1, i);
     	int fish = greater_fish_count_neighbour(ti.i);
@@ -119,7 +119,7 @@ static void update_tile(int tile)
     int fish = graph_get_fish(client.graph, tile);
     if (fish == 1) {
 	int l = list_size(client.tile_fish1);
-	for (int i = 1; i < l; i++) {
+	for (int i = 1; i <= l; i++) {
 	    union iv ti;
 	    ti.v = list_get_element(client.tile_fish1, i);
 	    if (ti.i == tile) {
