@@ -20,3 +20,10 @@ installclean:
 
 clean: debugclean installclean releaseclean docclean
 	$(RM) -r build
+
+
+doc: documentation/html
+
+documentation/html:
+	cd documentation; doxygen
+	cd documentation; ln -sf html/index.html index.html
