@@ -5,10 +5,11 @@
 #include <stdlib.h>
 
 #include <utils/vec.h>
-#include <display/dpenguin.h>
-#include <display/object.h>
-#include <display/texture.h>
-#include <display/model.h>
+
+#include "dpenguin.h"
+#include "object.h"
+#include "texture.h"
+#include "model.h"
 
 /**
  * Représentation d'un pingouin.

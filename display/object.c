@@ -9,9 +9,11 @@
 #include <GL/freeglut.h>
 
 #include <utils/vec.h>
-#include <display/object.h>
-#include <display/model.h>
-#include <display/texture.h>
+
+#include "object.h"
+#include "model.h"
+#include "texture.h"
+
 
 /**
  * Description d'un objet.

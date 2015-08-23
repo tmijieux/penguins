@@ -8,9 +8,11 @@
 
 #include <GL/freeglut.h>
 
-#include <display/dtile.h>
-#include <display/object.h>
 #include <utils/vec.h>
+
+#include "dtile.h"
+#include "object.h"
+
 
 /**
  * Représentation d'une tuile.
@@ -18,6 +20,7 @@
 struct dtile {
     struct object *obj;
     int fish_count;
+    int penguin;
 };
 
 /**
@@ -72,6 +75,7 @@ struct dtile* dtile_create(struct model *m, struct texture *t,
     vec3 rot__ = { 0., rot, 0. };
     ti->obj = object_create(m, t, pos, rot__, sca);
     ti->fish_count = fish_count;
+    ti->penguin = -1;
     return ti;
 }
 
@@ -128,4 +132,14 @@ void dtile_free(struct dtile *ti)
 {
     object_free(ti->obj);
     free(ti);
+}
+
+int dtile_get_penguin(const struct dtile *ti)
+{
+    return ti->penguin;
+}
+
+void dtile_set_penguin(struct dtile *ti, int penguin_id)
+{
+    ti->penguin = penguin_id;
 }

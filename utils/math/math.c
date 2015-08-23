@@ -13,6 +13,8 @@
 #include <utils/math.h>
 #include <utils/vec.h>
 
+#define SQUARE(x) ((x) * (x))
+
 /**
  * Normaliser un vecteur.
  * @param v - Vecteur à normaliser (modifié).
@@ -140,10 +142,20 @@ void rand_seed(void)
 /**
  * norm 1 :: for 'square' sphere 
  */
-double dnorm1(vec3 *v1, vec3 *v2)
+double dnorm1(const vec3 *v1, const vec3 *v2)
 {
     return
 	fabs(v1->x - v2->x) +
 	fabs(v1->y - v2->y) +
 	fabs(v1->z - v2->z);
+}
+
+double math_euclidian_distance(const vec3 *v1, const vec3 *v2)
+{
+    return
+	sqrt(
+	    SQUARE(v1->x - v2->x) +
+	    SQUARE(v1->y - v2->y) +
+	    SQUARE(v1->z - v2->z)
+	);
 }

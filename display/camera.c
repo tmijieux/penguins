@@ -8,8 +8,9 @@
 #include <GL/glut.h>
 #include <GL/glu.h>
 
-#include <display/camera.h>
 #include <utils/math.h>
+
+#include "camera.h"
 
 struct camera {
     // Point observé

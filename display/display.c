@@ -14,7 +14,8 @@
 #include <utils/math.h>
 #include <utils/list.h>
 
-#include <display/display.h>
+#include "display.h"
+#include "mouse_projection.h"
 
 /**
  * Gestion du thread.
@@ -28,41 +29,8 @@ static struct {
 /**
  * Gestion de la scène.
  */
-static struct {
-    int key;
-    // variables de la souris
-    int button, xold, yold;    
+struct scene scene;
 
-    // Generique: Scene
-    struct camera *cam;
-    struct light *light;
-    vec3 centroid;
-    
-    //Plateau
-    struct dtile **tiles;
-    int tile_count;
-
-    struct dpenguin **penguins;
-    int nb_peng_alloc;
-    int penguin_count;
-
-    struct model *penguin_model;
-    struct texture **penguin_tex;
-    int penguin_tex_count;
-
-    // Affichage Direction
-    int linked;
-    int **link;
-    int activeLink;
-
-    // move's list/queue
-    struct record *rec;
-    int autoplay;
-
-
-    struct list *tex_list;
-    struct list *mod_list;
-} scene;
 
 /**
  * Gestion du déroulement de la lecture de la partie.
@@ -86,17 +54,14 @@ static void display_compute_move(enum SENS s)
     int setPenguin = (tileSrc == -1);
     if (setPenguin)
 	tileSrc = tileDest;
-    int penguin = -1;
-    // Recherche du penguin à bouger
-    for (int i = 0; i < scene.penguin_count; i++)
-	if (scene.penguins[i] != NULL &&
-	    dpenguin_is_on_tile(scene.penguins[i], scene.tiles[tileSrc]))
-	    penguin = i;
+    int penguin = dtile_get_penguin(scene.tiles[tileSrc]);
+    dtile_set_penguin(scene.tiles[tileSrc], -1);
+    dtile_set_penguin(scene.tiles[tileDest], penguin);
 
     if (!setPenguin)
 	setPenguin = (tileDest == -1 && s == REWIND);
     if (setPenguin && penguin != -1) {
-	if(anim_prepare()){
+	if (anim_prepare()) {
 	    anim_new_movement(scene.penguins[penguin],0,1);
 	    anim_set_hide(s != FORWARD);
 	    anim_push_movement();
@@ -114,14 +79,14 @@ static void display_compute_move(enum SENS s)
 		if(angle <= 360)
 		    nb_move = NB_MOVE / 2;
 		
-		anim_new_movement(scene.penguins[penguin],0,nb_move);
+		anim_new_movement(scene.penguins[penguin], 0, nb_move);
 		if (angle > 360)
 		    anim_set_translation(tile_pos);
 		anim_set_rotation(angle);
 		
-		if (angle <= 360){
+		if (angle <= 360) {
 		    anim_push_movement();		
-		    anim_new_movement(scene.penguins[penguin],0,NB_MOVE);
+		    anim_new_movement(scene.penguins[penguin], 0, NB_MOVE);
 		    anim_set_translation(tile_pos);
 		}
 		anim_push_movement();
@@ -131,7 +96,7 @@ static void display_compute_move(enum SENS s)
 		tile = tileSrc;
 	    else
 	        tile = tileDest;
-	    anim_new_movement(scene.tiles[tile],1,1);
+	    anim_new_movement(scene.tiles[tile], 1, 1);
 	    anim_set_hide(s == FORWARD);
 	    anim_push_movement();
 	    anim_launch();
@@ -233,11 +198,13 @@ void mouse(int button, int state, int x, int y)
 	case GLUT_DOWN: scene.button = 1; break;
 	case GLUT_UP:
 	    scene.button = 0;
-	    vec3 pos;
-	    mouse_projection(&pos, x, y);
-	    printf("%f, %f, %f\n",
-		   pos.x, pos.y, pos.z);
-	    break;
+	    if (scene.mouseclick_mode) {
+		vec3 pos;
+		mc_mouse_projection(&pos, x, y);
+		mc_set_pos(&pos);
+		mc_cond_signal();
+		break;
+	    }
 	} break;
     case GLUT_RIGHT_BUTTON:
 	switch (state) {
@@ -411,6 +378,7 @@ static void display_opengl_init(void)
     glEnable(GL_NORMALIZE);
 
     glColorMaterial(GL_FRONT, GL_DIFFUSE);
+    glPolygonMode(GL_FRONT, GL_FILL);
     
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -434,6 +402,8 @@ static void display_scene_init(void)
 
     scene.tex_list = list_create(LIST_DEFAULT__);
     scene.mod_list = list_create(LIST_DEFAULT__);
+    
+    scene.mouseclick_mode = 0;
 }
 
 /**
@@ -628,8 +598,8 @@ int display_add_penguin(int tile, int player)
 	    = dpenguin_create(scene.penguin_model, t, pos, 0., 0.1);
 	if (scene.penguins[scene.nb_peng_alloc] == NULL)
 	    return 0;
-	
-	dpenguin_set_position(scene.penguins[scene.nb_peng_alloc], pos);
+	dtile_set_penguin(scene.tiles[tile], scene.nb_peng_alloc);
+	    
 	dpenguin_hide(scene.penguins[scene.nb_peng_alloc]);
 	
 	scene.nb_peng_alloc++;
@@ -682,4 +652,10 @@ void display_register_texture(struct texture *t)
 void display_register_model(struct model *m)
 {
     list_add_element(scene.mod_list, m);
+}
+
+
+void scene_mouseclick_mode(int v)
+{
+    scene.mouseclick_mode = v;
 }

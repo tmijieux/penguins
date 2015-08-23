@@ -5,11 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <display/animator.h>
-#include <display/dtile.h>
-#include <display/dpenguin.h>
-
 #include <utils/vec.h>
+
+#include "animator.h"
+#include "dtile.h"
+#include "dpenguin.h"
 
 #define MAX_ANIMATION 10
 

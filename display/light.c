@@ -2,7 +2,7 @@
 #include <GL/glut.h>
 #include <GL/glu.h>
 
-#include <display/light.h>
+#include "light.h"
 
 /**
  * @file light.c

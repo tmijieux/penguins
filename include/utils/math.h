@@ -18,4 +18,6 @@ int powi(int a, int p);
 void rand_seed(void);
 int randomint(int max);
 
+double math_euclidian_distance(const vec3 *v1, const vec3 *v2);
+
 #endif //MATH_H
