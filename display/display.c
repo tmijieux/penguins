@@ -231,7 +231,13 @@ void mouse(int button, int state, int x, int y)
     case GLUT_LEFT_BUTTON:
 	switch (state) {
 	case GLUT_DOWN: scene.button = 1; break;
-	case GLUT_UP:   scene.button = 0; break;
+	case GLUT_UP:
+	    scene.button = 0;
+	    vec3 pos;
+	    mouse_projection(&pos, x, y);
+	    printf("%f, %f, %f\n",
+		   pos.x, pos.y, pos.z);
+	    break;
 	} break;
     case GLUT_RIGHT_BUTTON:
 	switch (state) {
@@ -341,7 +347,10 @@ static void display(void)
 	    display_read_move(FORWARD);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glPushMatrix();
+    
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    
     camera_update(scene.cam);
     light_update(scene.light);
     
@@ -353,7 +362,6 @@ static void display(void)
     for (int i = 0; i < scene.nb_peng_alloc; i++)
 	dpenguin_draw(scene.penguins[i]);
 
-    glPopMatrix();
     glutSwapBuffers();
     glutPostRedisplay();
 }
@@ -399,13 +407,13 @@ static void display_opengl_init(void)
 
     // Parametrage du materiau
     glEnable(GL_COLOR_MATERIAL);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_NORMALIZE);
+
     glColorMaterial(GL_FRONT, GL_DIFFUSE);
     
-    glMatrixMode(GL_PROJECTION);
+    glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
-    // enable depth-buffer updates.
-    glEnable(GL_DEPTH_TEST);
 }
 
 /**

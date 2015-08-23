@@ -184,6 +184,8 @@ void camera_rotate(struct camera *c, int ar, int ay)
  */
 void camera_update(struct camera *c)
 {
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
     if (c->ortho) {
 	glOrtho(-10., 10., -10., 10., -100., 100.);
     } else {
@@ -191,6 +193,7 @@ void camera_update(struct camera *c)
     }
    
     camera_do_rotate(c, c->ar, c->ay);
+    glMatrixMode(GL_MODELVIEW);
     gluLookAt(c->look.x + c->dis * c->rpos.x,
 	      c->look.y + c->dis * c->rpos.y,
 	      c->look.z + c->dis * c->rpos.z,

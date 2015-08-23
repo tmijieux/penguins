@@ -129,6 +129,7 @@ void object_draw(struct object *obj)
 {
     if (obj == NULL || obj->hidden)
 	return;
+    glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
     glTranslated(obj->pos.x, obj->pos.y, obj->pos.z);
     glRotated(obj->rot.x, 1., 0., 0.);

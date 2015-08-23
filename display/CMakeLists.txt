@@ -10,6 +10,7 @@ set(DISPLAY_SRC
   model.c
   dpenguin.c
   dtile.c
+  mouse_projection.c
 )
 find_package(Threads)
 

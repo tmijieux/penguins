@@ -135,3 +135,15 @@ void rand_seed(void)
 	once = 1;
     }
 }
+
+
+/**
+ * norm 1 :: for 'square' sphere 
+ */
+double dnorm1(vec3 *v1, vec3 *v2)
+{
+    return
+	fabs(v1->x - v2->x) +
+	fabs(v1->y - v2->y) +
+	fabs(v1->z - v2->z);
+}
