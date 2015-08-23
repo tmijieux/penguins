@@ -401,7 +401,6 @@ static void display_opengl_init(void)
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT, GL_DIFFUSE);
     
-    //Mise en place de la projection perspective
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 

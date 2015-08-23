@@ -90,16 +90,17 @@ static int greater_fish_count_neighbour(int tile)
 
 int client_place_penguin(void)
 {
-    int tile = 0; int max = -2;
-    int l = list_size(client.tile_fish1);
-    for (int i = 1; i <= l; i++) {
-    	union iv ti;
-    	ti.v = list_get_element(client.tile_fish1, i);
-    	int fish = greater_fish_count_neighbour(ti.i);
-    	if (fish > max) {
-    	    max = fish;
-    	    tile = ti.i;
-    	}
+    int tile = 0;
+    int ok = 0;
+    
+    while (!ok) { 
+	tile = display_player_chose_tile();
+	if (graph_get_fish(client.graph, tile) != 1) {
+	    display_blink_wrong_tile(tile);
+	} else {
+	    display_blink_good_tile(tile);
+	    ok = 1;
+	}
     }
 
     struct penguin *penguin = penguin_create(tile);
@@ -135,35 +136,49 @@ static void update_tile(int tile)
     graph_set_player(client.graph, tile, tile__get_player(tile));
 }
 
-void client_play(struct move *ret)
+
+static int target_is_reachable(int src, int trg, int *dir, int *jmp)
 {
-    int dest = -1;
-    int tile, max_dir, max_jump;
-    struct penguin *p;
-    do {
-	p = chose_penguin();
-	tile = penguin_get_tile(p);
-	max_dir = max_jump = -1;
-	int nb_dir = nb_direction(tile);
-	int max_fish = -1;
-	for (int dir = 0; dir < nb_dir; dir++) {
-	    for (int jump = 1; jump < 10; jump++) {
-		if ((dest = move_is_valid(tile, dir, jump)) > -1) {
-		    int nb_fish = graph_get_fish(client.graph, dest);
-		    if (max_fish < nb_fish) {
-			max_fish = nb_fish;
-			max_dir = dir;
-			max_jump = jump;
-			move_set(ret, tile, max_dir, max_jump);
-		    }
-		} else {
-		    break;
-		}
+    int max_dir = nb_direction(src), ok = 0;
+    for (int i = 0; !ok && i < max_dir; i++) {
+	int dst = 1;
+	while (dst > 0) {
+	    dst = move_is_valid(src, i, j);
+	    if (dst == trg) {
+		*dir = i;
+		*jmp = j;
+		ok = 1;
+		break;
 	    }
 	}
-    } while ((dest = move_is_valid(tile, max_dir, max_jump)) < 0);
-    graph_set_fish(client.graph, tile, -1);
-    penguin_set_tile(p, dest);
+    }
+    return ok;
+}
+
+void client_play(struct move *ret)
+{
+    int src = -1;
+    int target = -1;
+    int ok = 0, dir, jmp;
+    while (!ok) {
+	struct mouseclick mc;
+	display_mc_get(&mc);
+	if (!mc.validclick)
+	    continue;
+	int p = graph_get_player(client.graph, mc.id);
+	if (p == client.id)
+	    src = mc.id;
+	else if (p > 0)
+	    display_blink_bad_penguin(mc.id);
+	else if (mc.t == MC_TILE)
+	    target = mc.id;
+	if (src >= 0 && target >= 0) {
+	    ok = target_is_reachable(src, target, &dir, &jmp);
+	    if (!ok)
+		display_blink_bad_tile(target);
+	}
+    }
+    move_set(ret, tile, dir, jmp);
 }
 
 void send_diff(enum diff_type dt, int orig, int dest)

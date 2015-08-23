@@ -1,0 +1,6 @@
+
+
+
+find what cause bug with following parameters:
+-t 63 -d 8
+-t 68 -d 8
