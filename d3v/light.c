@@ -42,7 +42,6 @@ struct light *d3v_light_create(void)
     //glLightfv(GL_LIGHT0, GL_POSITION, l->L0pos);
     //glLightfv(GL_LIGHT1, GL_POSITION, l->L0pos);
 
-    glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     //glEnable(GL_LIGHT1);
     return l;

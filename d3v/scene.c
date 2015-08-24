@@ -50,6 +50,7 @@ static void key_input(unsigned char key, int x, int y)
 	//break;
     case 27:	/* touche ESC */
 	glutLeaveMainLoop();
+	scene.exit_callback();
 	break;
     case '5':
 	d3v_camera_switch_ortho(scene.cam);
@@ -139,8 +140,13 @@ static void reshape(int w, int h)
  */
 static void draw_basis(void)
 {
+    GLboolean b; // save lighting state and disable
+    glGetBooleanv(GL_LIGHTING, &b);
+    glDisable(GL_LIGHTING);
+
     glColor3f(1.0, 1.0, 1.0);
-    glNormal3f(0,1,0);
+        
+    glNormal3f(0, 1, 0);
     glBegin(GL_LINES);
     glColor3f(1., 0., 0.);    // x red
     glVertex3f(0., 0., 0.);
@@ -155,6 +161,9 @@ static void draw_basis(void)
     glVertex3f(0., 0., 1.);
     glEnd();
     glColor3f(1.0, 1.0, 1.0); // Reset Color
+
+    if (b) // restore lighting state
+	glEnable(GL_LIGHTING);
 }
 
 /**
@@ -172,7 +181,7 @@ static void scene_draw(void)
     d3v_camera_update(scene.cam);
     d3v_light_update(scene.light);
 
-    scene.draw_callback(); // TODO add support for this callback
+    scene.draw_callback();
     
     draw_basis(); // TODO: option to disable this
     
@@ -225,7 +234,6 @@ void d3v_scene_start(vec3 *pos) // private;
     d3v_camera_set_look(scene.cam, pos);
 }
 
-
 // PUBLIC
 void d3v_set_mouse_callback(
     void (*mouse_callback)(int,int,int,int))
@@ -249,6 +257,12 @@ void d3v_set_draw_callback(
     void (*draw_callback)(void))
 {
     scene.draw_callback = draw_callback;
+}
+
+void d3v_set_exit_callback(
+    void (*exit_callback)(void))
+{
+    scene.exit_callback = exit_callback;
 }
 
 void d3v_init_glut_callback(void)

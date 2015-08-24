@@ -27,10 +27,12 @@ struct scene {
 
     vec3 first_look;
 
+    void (*exit_callback)(void);
     void (*draw_callback)(void);
     void (*mouse_callback)(int,int,int,int);
     void (*spe_input_callback)(int,int,int);
     void (*key_input_callback)(int,int,int);
+    
 };
 
 extern struct scene scene;

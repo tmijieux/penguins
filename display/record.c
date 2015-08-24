@@ -17,7 +17,7 @@ struct dmove {
 };
 
 // Mutex pour le thread.
-pthread_mutex_t m;
+static pthread_mutex_t m;
 
 struct record {
     struct dmove *moves;

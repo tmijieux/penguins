@@ -35,9 +35,13 @@ static void
 render_string(float x, float y, float z,
 	      const char *string, int t, float espace)
 {
+
+    GLboolean b; // save lighting state and disable
+    glGetBooleanv(GL_LIGHTING, &b);
+    glDisable(GL_LIGHTING);
+
     //Desactivation car non supporté pour la coloration de Bitmap
     glDisable(GL_TEXTURE_2D);
-    //glDisable(GL_LIGHTING);
 
     //Couleur du texte
     glColor3f(0.0, 0.0, 0.0);
@@ -52,7 +56,9 @@ render_string(float x, float y, float z,
     glColor3f(1.0, 1.0, 1.0);
     //Réactivation
     glEnable(GL_TEXTURE_2D);
-    //glEnable(GL_LIGHTING);
+
+    if (b)
+	glEnable(GL_LIGHTING);
 }
 
 /**

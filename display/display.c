@@ -53,16 +53,12 @@ static void display_compute_move(enum SENS s)
     
     int penguin;
     penguin = dtile_get_penguin(dsp.tiles[tileSrc]);
-    dtile_set_penguin(dsp.tiles[tileSrc], -1);
-    
-    if (tileDest != -1)
-	dtile_set_penguin(dsp.tiles[tileDest], penguin);
 
     if (!setPenguin)
 	setPenguin = (tileDest == -1 && s == REWIND);
     if (setPenguin && penguin != -1) {
 	if (anim_prepare()) {
-	    anim_new_movement(dsp.penguins[penguin],0,1);
+	    anim_new_movement(dsp.penguins[penguin], 0, 1);
 	    anim_set_hide(s != FORWARD);
 	    anim_push_movement();
 	    anim_launch();
@@ -101,6 +97,11 @@ static void display_compute_move(enum SENS s)
 	    anim_push_movement();
 	    anim_launch();
 	}
+    }
+    
+    if (tileSrc >= 0 && tileDest >= 0) {
+	dtile_set_penguin(dsp.tiles[tileSrc], -1);
+	dtile_set_penguin(dsp.tiles[tileDest], penguin);
     }
 }
 
@@ -153,9 +154,6 @@ static void draw_link(void)
 
 static void draw(void)
 {
-    // TODO: register this callback;
-    //    no support to register it yet even if funpntr exists
-    
     int nextMove = !anim_run();
     if (dsp.autoplay)
 	if(nextMove)
@@ -183,7 +181,6 @@ static void draw(void)
 
 static void special_input(int key, int x, int y)
 {
-    // TODO: register this callback !!!
     switch (key) {
     case GLUT_KEY_UP:
 	if (dsp.activeLink < dsp.tile_count - 1)
@@ -233,6 +230,7 @@ static void mouse(int button, int state, int x, int y)
 /******* INITIALIZATION AND FREES **************************/
 
 /*** INITS *****/
+static void exit_thread(void);
 
 /**
  * Initialisation des propriétés de la scène. Non lié à la partie.
@@ -255,6 +253,7 @@ static void init_d3v_stuff(void)
     d3v_set_key_input_callback(&key_input);
     d3v_set_spe_input_callback(&special_input);
     d3v_set_mouse_callback(&mouse);
+    d3v_set_exit_callback(&exit_thread);
 }
 
 /**
@@ -294,13 +293,11 @@ void display_init(int tile_count, int penguin_count)
     init_penguin_stuff(tile_count, penguin_count);
 }
 
-static void exit_thread(void);
 
 /*** STARTS *****/
 static void* thread_start(void *args)
 {
-    d3v_start();
-    exit_thread();
+    d3v_start(&dsp.centroid);
     return NULL;
 }
 
@@ -362,8 +359,6 @@ static void free_penguin_stuff(void)
  * Arrêt du thread d'affichage.
  */
 static void exit_thread(void)
-// I think this need to be registered as a callback
-// TODO: check this
 {
     free_penguin_stuff();
     free_d3v_stuff();

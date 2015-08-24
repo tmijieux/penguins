@@ -32,6 +32,7 @@ static void opengl_init(void)
     //glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 
     // Parametrage du materiau
+    glEnable(GL_LIGHTING);
     glEnable(GL_COLOR_MATERIAL);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
@@ -54,8 +55,9 @@ int d3v_init(int object_count_clue)
     return 0;
 }
 
-int d3v_start(void)
+int d3v_start(vec3 *pos)
 {
+    d3v_scene_start(pos);
     glutMainLoop();
     return 0;
 }

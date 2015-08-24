@@ -83,6 +83,7 @@ void d3v_camera_switch_ortho(struct camera *c)
     c->ortho = !c->ortho;
     if (!c->ortho) {
 	double d = 1. / c->orthosize;
+	glMatrixMode(GL_MODELVIEW);
 	glScaled(d, d, d);
 	c->orthosize = 1.;
     }
@@ -143,13 +144,11 @@ void d3v_camera_translate(struct camera *c, double dw, double dh)
 void d3v_camera_add_distance(struct camera *c, double d)
 {
     if (c->ortho) {
-	if (d > 0) {
-	    glScaled(0.9, 0.9, 0.9);
+	glMatrixMode(GL_PROJECTION);
+	if (d > 0)
 	    c->orthosize *= 0.9;
-	} else {
-	    glScaled(1.1, 1.1, 1.1);
+	else 
 	    c->orthosize *= 1.1;
-	}
     } else {
 	c->dis = (c->dis + d <= 0.01) ? 0.0 : c->dis + d;
     }
@@ -189,6 +188,7 @@ void d3v_camera_update(struct camera *c)
     glLoadIdentity();
     if (c->ortho) {
 	glOrtho(-10., 10., -10., 10., -100., 100.);
+	glScaled(c->orthosize, c->orthosize, c->orthosize);
     } else {
         gluPerspective(30.0, 1.0, 0.1, 100.0);
     }

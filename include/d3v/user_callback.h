@@ -9,5 +9,7 @@ void d3v_set_key_input_callback(
     void (*key_input_callback)(int,int,int));
 void d3v_set_draw_callback(
     void (*draw_callback)(void));
+void d3v_set_exit_callback(
+    void (*exit_callback)(void));
 
 #endif //USER_CALLBACK_H
