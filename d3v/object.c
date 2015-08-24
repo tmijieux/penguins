@@ -10,10 +10,9 @@
 
 #include <utils/vec.h>
 
-#include "object.h"
-#include "model.h"
-#include "texture.h"
-
+#include <d3v/object.h>
+#include <d3v/model.h>
+#include <d3v/texture.h>
 
 /**
  * Description d'un objet.
@@ -40,7 +39,7 @@ struct object {
  * @return struct object * - L'objet créé.
  */
 struct object*
-object_create(struct model *m, struct texture* t,
+d3v_object_create(struct model *m, struct texture* t,
 	      vec3 pos, vec3 rot, vec3 scale)
 {
     struct object *obj = malloc(sizeof(*obj));
@@ -64,7 +63,7 @@ object_create(struct model *m, struct texture* t,
  * @param obj - Un objet.
  * @param pos - Position de l'objet.
  */
-void object_get_position(struct object *obj, vec3 *pos)
+void d3v_object_get_position(struct object *obj, vec3 *pos)
 {
     *pos = obj->pos;
 }
@@ -74,7 +73,7 @@ void object_get_position(struct object *obj, vec3 *pos)
  * @param obj - Un objet.
  * @param pos - Position de l'objet.
  */
-void object_set_position(struct object *obj, vec3 pos)
+void d3v_object_set_position(struct object *obj, vec3 pos)
 {
     obj->pos = pos;
 }
@@ -84,7 +83,7 @@ void object_set_position(struct object *obj, vec3 pos)
  * @param obj - Un objet.
  * @param rot - Orientation de l'objet.
  */
-void object_set_orientation(struct object *obj, vec3 rot)
+void d3v_object_set_orientation(struct object *obj, vec3 rot)
 {
     obj->rot = rot;
 }
@@ -94,7 +93,7 @@ void object_set_orientation(struct object *obj, vec3 rot)
  * @param obj - Un objet.
  * @param rot - Orientation de l'objet.
  */
-void object_get_orientation(struct object *obj, vec3 *rot)
+void d3v_object_get_orientation(struct object *obj, vec3 *rot)
 {
     *rot = obj->rot;
 }
@@ -104,7 +103,7 @@ void object_get_orientation(struct object *obj, vec3 *rot)
  * @param obj - Un objet.
  * @param pos - Vecteur de déplacement.
  */
-void object_translate(struct object *obj, vec3 pos)
+void d3v_object_translate(struct object *obj, vec3 pos)
 {
     obj->pos.x += pos.x;
     obj->pos.y += pos.y;
@@ -116,7 +115,7 @@ void object_translate(struct object *obj, vec3 pos)
  * @param obj - Un objet.
  * @param scale - Vecteur de transformation.
  */
-void object_scale(struct object *obj, vec3 scale)
+void d3v_object_scale(struct object *obj, vec3 scale)
 {
     obj->scale.x *= scale.x;
     obj->scale.y *= scale.y;
@@ -127,7 +126,7 @@ void object_scale(struct object *obj, vec3 scale)
  * Dessiner un objet.
  * @param obj - Un objet.
  */
-void object_draw(struct object *obj)
+void d3v_object_draw(struct object *obj)
 {
     if (obj == NULL || obj->hidden)
 	return;
@@ -161,7 +160,7 @@ void object_draw(struct object *obj)
  * @param pos - Position à étudier.
  * @return int - 1 Si position identique.
  */
-int object_pos_equal(struct object *obj, vec3 pos)
+int d3v_object_pos_equal(struct object *obj, vec3 pos)
 {
     return obj->pos.x == pos.x &&
 	obj->pos.y == pos.y &&
@@ -172,7 +171,7 @@ int object_pos_equal(struct object *obj, vec3 pos)
  * Cacher un objet.
  * @param obj - Un objet.
  */
-void object_hide(struct object *obj)
+void d3v_object_hide(struct object *obj)
 {
     obj->hidden = 1;
 }
@@ -181,7 +180,7 @@ void object_hide(struct object *obj)
  * Révéler un objet.
  * @param obj - Un objet.
  */
-void object_reveal(struct object *obj)
+void d3v_object_reveal(struct object *obj)
 {
     obj->hidden = 0;
 }
@@ -190,7 +189,7 @@ void object_reveal(struct object *obj)
  * Libérer la mémoire occupé par un objet.
  * @param obj - Un objet.
  */
-void object_free(struct object *obj)
+void d3v_object_free(struct object *obj)
 {
     free(obj);
 }
@@ -200,7 +199,7 @@ void object_free(struct object *obj)
  * @param obj - Un objet.
  * @return int - 1 si est caché. Autre sinon.
  */
-int object_is_hidden(struct object *obj)
+int d3v_object_is_hidden(struct object *obj)
 {
     return obj->hidden;
 }

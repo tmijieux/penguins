@@ -14,7 +14,7 @@
 
 #include <utils/vec.h>
 #include <server/path.h>
-#include <display/model.h>
+#include <d3v/model.h>
 
 #define LINE_SIZE 128
 

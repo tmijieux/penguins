@@ -17,7 +17,7 @@
 #include <utils/graph.h>
 #include <utils/log.h>
 
-#include <display/display.h>
+#include <display.h>
 
 #ifndef TEST
 #define STATIC static

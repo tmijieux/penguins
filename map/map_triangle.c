@@ -8,9 +8,10 @@
 #include <server/map.h>
 #include <server/coord.h>
 #include <utils/log.h>
-#include <display/display.h>
-#include <display/texture.h>
-#include <display/model.h>
+
+#include <display.h>
+#include <d3v/texture.h>
+#include <d3v/model.h>
 
 #define SQRT_3 1.73205080757
 

@@ -1,5 +1,5 @@
-#ifndef MOUSECLICK_IFACE_H
-#define MOUSECLICK_IFACE_H
+#ifndef MOUSECLICK_H
+#define MOUSECLICK_H
 
 enum mc_object_type {
     MC_TILE,
@@ -56,4 +56,4 @@ void display_mc_init(int (*coord_on_tile)(double x, double z),
   
 */
 
-#endif //MOUSECLICK_IFACE_H
+#endif //MOUSECLICK_H

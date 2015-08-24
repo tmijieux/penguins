@@ -2,7 +2,7 @@
 #define SERVER_MOVE_H
 
 #include <utils/graph.h>
-#include <interface/move.h>
+#include <move.h>
 
 /**
  * décrit le coup d'un joueur

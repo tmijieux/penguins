@@ -1,6 +1,16 @@
 
+d3v: no thread management in d3v (use callback for signal the
+     	       		     	      	       mouseclick)
+simple init/start/stop/exit sequence
+       handle object and model
+       interface for adding/loading objects/models
+       a mouseclicker module --> coordinate
 
-
+display: maybe think of a rename
+	 handle thread management
+	 handle dtile / dpenguin
+	 wrapper of mouseclicker for tiles/penguins
+	 
 find what cause bug with following parameters:
 -t 63 -d 8
 -t 68 -d 8

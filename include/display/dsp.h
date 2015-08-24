@@ -1,0 +1,39 @@
+#ifndef DSP_H
+#define DSP_H
+
+
+#include <utils/vec.h>
+#include <utils/list.h>
+
+struct display {
+//Plateau
+    struct dtile **tiles;
+    int tile_count;
+
+    struct model *penguin_model;
+    struct texture **penguin_tex;
+    int penguin_tex_count;
+
+    struct dpenguin **penguins;
+    int nb_peng_alloc;
+    int penguin_count;
+    vec3 centroid;
+
+// move's list/queue
+    struct record *rec;
+    
+// Affichage Direction
+    int linked;
+    int **link;
+    int activeLink;
+
+    int autoplay;
+
+    struct list *tex_list;
+    struct list *mod_list;
+    
+};
+
+extern struct display dsp;
+
+#endif //DSP_H

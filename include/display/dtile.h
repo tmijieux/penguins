@@ -3,8 +3,8 @@
 
 #include <utils/vec.h>
 
-#include "texture.h"
-#include "model.h"
+#include <d3v/texture.h>
+#include <d3v/model.h>
 
 struct dtile;
 

@@ -1,5 +1,5 @@
 #include <string.h>
-#include <utils/util.h>
+#include <utils/utils.h>
 
 /**
  * Informe si le fichier a un extension donné

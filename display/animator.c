@@ -7,9 +7,9 @@
 
 #include <utils/vec.h>
 
-#include "animator.h"
-#include "dtile.h"
-#include "dpenguin.h"
+#include <display/animator.h>
+#include <display/dtile.h>
+#include <display/dpenguin.h>
 
 #define MAX_ANIMATION 10
 

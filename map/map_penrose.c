@@ -7,9 +7,10 @@
 #include <math.h>
 
 #include <server/map.h>
-#include <display/display.h>
-#include <display/texture.h>
-#include <display/model.h>
+
+#include <display.h>
+#include <d3v/texture.h>
+#include <d3v/model.h>
 
 #include "penrose/penrose.h"
 

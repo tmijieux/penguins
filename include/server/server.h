@@ -5,7 +5,7 @@
 #define GAME_ERROR           -1
 #define PENGUINS_PER_CLIENT   2
 
-#include <interface/server.h>
+#include <server.h>
 
 void server_init(int tile_number, int max_fish,
 		 int dimensions, const char *map_path);

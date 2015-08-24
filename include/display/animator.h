@@ -1,10 +1,11 @@
 #ifndef ANIMATOR_H
 #define ANIMATOR_H
 
-#include "object.h"
+#include <utils/vec.h>
+
+#define NB_MOVE 40
 
 void anim_init(void);
-
 int anim_new_movement(void *o, int type, int total);
 int anim_set_translation(vec3 dest);
 int anim_set_rotation(float dest);

@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <interface/move.h>
+#include <move.h>
 #include <server/move.h>
 #include <server/tile.h>
 #include <server/server.h>

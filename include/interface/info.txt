@@ -1,3 +1,0 @@
-dans la racine de ce dossier:
-ce qui est commun au client et serveur:
-les deux interfaces.

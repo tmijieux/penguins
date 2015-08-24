@@ -6,10 +6,11 @@
 #include <limits.h>
 #include <math.h>
 
-#include <interface/client.h>
-#include <interface/server.h>
-#include <interface/move.h>
-#include <interface/tile.h>
+#include <client.h>
+#include <server.h>
+#include <move.h>
+#include <tile.h>
+
 #include <utils/graph.h>
 #include <utils/list.h>
 

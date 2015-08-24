@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <interface/tile.h>
 #include <server/tile.h>
+
 #include <utils/graph.h>
 #include <utils/sorted_list.h>
 

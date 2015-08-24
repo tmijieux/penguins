@@ -1,7 +1,7 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#include <interface/move.h>
+#include <move.h>
 
 enum diff_type {
 	MOVE,

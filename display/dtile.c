@@ -10,9 +10,8 @@
 
 #include <utils/vec.h>
 
-#include "dtile.h"
-#include "object.h"
-
+#include <display/dtile.h>
+#include <d3v/object.h>
 
 /**
  * Représentation d'une tuile.
@@ -73,7 +72,7 @@ struct dtile* dtile_create(struct model *m, struct texture *t,
     struct dtile *ti = malloc(sizeof(*ti));
     vec3 sca = { scale, scale, scale };
     vec3 rot__ = { 0., rot, 0. };
-    ti->obj = object_create(m, t, pos, rot__, sca);
+    ti->obj = d3v_object_create(m, t, pos, rot__, sca);
     ti->fish_count = fish_count;
     ti->penguin = -1;
     return ti;
@@ -85,13 +84,13 @@ struct dtile* dtile_create(struct model *m, struct texture *t,
  */
 void dtile_draw(struct dtile* ti)
 {
-    if (!object_is_hidden(ti->obj)) {
+    if (!d3v_object_is_hidden(ti->obj)) {
 	vec3 pos; char str[15];
-	object_get_position(ti->obj, &pos);
+	d3v_object_get_position(ti->obj, &pos);
 	sprintf(str, "%d", ti->fish_count);
 	render_string(pos.x, pos.y + 0.2,pos.z, str,
 		      strlen(str), 0.15);
-	object_draw(ti->obj);
+	d3v_object_draw(ti->obj);
     }
 }
 
@@ -103,7 +102,7 @@ void dtile_draw(struct dtile* ti)
  */
 void dtile_get_position(struct dtile *ti, vec3 *pos)
 {
-    object_get_position(ti->obj, pos);
+    d3v_object_get_position(ti->obj, pos);
 }
 
 /**
@@ -112,7 +111,7 @@ void dtile_get_position(struct dtile *ti, vec3 *pos)
  */
 void dtile_hide(struct dtile *ti)
 {
-    object_hide(ti->obj);
+    d3v_object_hide(ti->obj);
 }
 
 /**
@@ -121,7 +120,7 @@ void dtile_hide(struct dtile *ti)
  */
 void dtile_reveal(struct dtile *ti)
 {
-    object_reveal(ti->obj);
+    d3v_object_reveal(ti->obj);
 }
 
 /**
@@ -130,7 +129,7 @@ void dtile_reveal(struct dtile *ti)
  */
 void dtile_free(struct dtile *ti)
 {
-    object_free(ti->obj);
+    d3v_object_free(ti->obj);
     free(ti);
 }
 

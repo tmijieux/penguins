@@ -3,10 +3,11 @@
 
 #include <utils/vec.h>
 
-#include "dtile.h"
-#include "object.h"
-#include "texture.h"
-#include "model.h"
+#include <display/dtile.h>
+
+#include <d3v/object.h>
+#include <d3v/texture.h>
+#include <d3v/model.h>
 
 struct dpenguin;
 

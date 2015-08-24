@@ -4,14 +4,14 @@
 #include <GL/freeglut.h>
 #include <GL/glu.h>
 
-#include <display/texture.h>
-#include <display/model.h>
+#include <d3v/texture.h>
+#include <d3v/model.h>
 
 #define DISPLAY_THREAD_RETVAL ((void*)-42)
 
 void display_init(int nb_tile, int nb_penguin);
 void display_start(void);
-void display_exit(void);
+int display_exit(void);
 
 int display_add_tile(int id, struct model *m, struct texture *t,
 		     double posx, double posy, double posz,

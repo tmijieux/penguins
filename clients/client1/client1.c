@@ -4,10 +4,11 @@
 
 #include <stdio.h>
 
-#include <interface/client.h>
-#include <interface/server.h>
-#include <interface/move.h>
-#include <interface/tile.h>
+#include <client.h>
+#include <server.h>
+#include <move.h>
+#include <tile.h>
+
 #include <utils/graph.h>
 #include <utils/list.h>
 
@@ -32,11 +33,6 @@ static struct penguin *penguin_create(int tile)
     struct penguin *p = malloc(sizeof(*p));
     p->tile = tile;
     return p;
-}
-    
-static void penguin_remove(struct penguin *p)
-{
-    p->tile = -1;
 }
 
 static void penguin_set_tile(struct penguin *p, int tile)

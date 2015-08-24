@@ -6,10 +6,10 @@
 
 #include <utils/vec.h>
 
-#include "dpenguin.h"
-#include "object.h"
-#include "texture.h"
-#include "model.h"
+#include <display/dpenguin.h>
+#include <d3v/object.h>
+#include <d3v/texture.h>
+#include <d3v/model.h>
 
 /**
  * Représentation d'un pingouin.
@@ -34,7 +34,7 @@ dpenguin_create(struct model *m, struct texture *t,
     struct dpenguin *pen = malloc(sizeof(*pen));
     vec3 sca = { scale, scale, scale };
     vec3 rot__ = { 0., rot, 0. };
-    pen->obj = object_create(m, t, pos, rot__, sca);
+    pen->obj = d3v_object_create(m, t, pos, rot__, sca);
     return pen;
 }
 
@@ -44,7 +44,7 @@ dpenguin_create(struct model *m, struct texture *t,
  */
 void dpenguin_draw(struct dpenguin *pen)
 {
-    object_draw(pen->obj);
+    d3v_object_draw(pen->obj);
 }
 
 /**
@@ -55,7 +55,7 @@ void dpenguin_draw(struct dpenguin *pen)
 double dpenguin_get_orientation(struct dpenguin *pen)
 {
     vec3 orient;
-    object_get_orientation(pen->obj, &orient);
+    d3v_object_get_orientation(pen->obj, &orient);
     return orient.y;
 }
 
@@ -66,7 +66,7 @@ double dpenguin_get_orientation(struct dpenguin *pen)
  */
 void dpenguin_rotate(struct dpenguin *pen, double a)
 {
-    object_set_orientation(pen->obj, (vec3) { 0., a, 0. });
+    d3v_object_set_orientation(pen->obj, (vec3) { 0., a, 0. });
 }
 		
 /**
@@ -76,7 +76,7 @@ void dpenguin_rotate(struct dpenguin *pen, double a)
  */
 void dpenguin_get_position(struct dpenguin *pen, vec3 *pos)
 {
-    object_get_position(pen->obj, pos);
+    d3v_object_get_position(pen->obj, pos);
 }
 
 /**
@@ -86,7 +86,7 @@ void dpenguin_get_position(struct dpenguin *pen, vec3 *pos)
  */
 void dpenguin_set_position(struct dpenguin *pen, vec3 pos)
 {
-    object_set_position(pen->obj, pos);
+    d3v_object_set_position(pen->obj, pos);
 }
 
 /**
@@ -99,7 +99,7 @@ int dpenguin_is_on_tile(struct dpenguin *pen, struct dtile* ti)
 {
     vec3 pos;
     dtile_get_position(ti, &pos);
-    return object_pos_equal(pen->obj, pos);
+    return d3v_object_pos_equal(pen->obj, pos);
 }
 
 /**
@@ -108,7 +108,7 @@ int dpenguin_is_on_tile(struct dpenguin *pen, struct dtile* ti)
  */
 void dpenguin_hide(struct dpenguin *pen)
 {
-    object_hide(pen->obj);
+    d3v_object_hide(pen->obj);
 }
 
 /**
@@ -117,7 +117,7 @@ void dpenguin_hide(struct dpenguin *pen)
  */
 void dpenguin_reveal(struct dpenguin *pen)
 {
-    object_reveal(pen->obj);
+    d3v_object_reveal(pen->obj);
 }
 
 /**
@@ -128,6 +128,6 @@ void dpenguin_free(struct dpenguin *pen)
 {
     if (pen == NULL)
 	return;
-    object_free(pen->obj);
+    d3v_object_free(pen->obj);
     free(pen);
 }

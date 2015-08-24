@@ -10,7 +10,7 @@
 
 #include <utils/math.h>
 
-#include "camera.h"
+#include <d3v/camera.h>
 
 struct camera {
     // Point observé
@@ -60,7 +60,7 @@ static void camera_do_rotate(struct camera *c, double ar, double ay)
  * @param ay - angle par rapport à z.
  * @param ortho - 1 si le mode orthogonal est activé.
  */
-struct camera *camera_create(vec3 look, double dis, int ar, int ay,
+struct camera *d3v_camera_create(vec3 look, double dis, int ar, int ay,
 			     int ortho)
 {
     struct camera *c = malloc(sizeof(*c));
@@ -78,7 +78,7 @@ struct camera *camera_create(vec3 look, double dis, int ar, int ay,
  * Change le mode de projection de la camera.
  * @param c - La camera.
  */
-void camera_switch_ortho(struct camera *c)
+void d3v_camera_switch_ortho(struct camera *c)
 {
     c->ortho = !c->ortho;
     if (!c->ortho) {
@@ -92,7 +92,7 @@ void camera_switch_ortho(struct camera *c)
  * Libère la mémoire occupé par la camera.
  * @param c - La camera.
  */ 
-void camera_free(struct camera *c)
+void d3v_camera_free(struct camera *c)
 {
     free(c);
 }
@@ -102,9 +102,9 @@ void camera_free(struct camera *c)
  * @param c - La camera.
  * @param look - Nouvelle position.
  */
-void camera_set_look(struct camera *c, vec3 look)
+void d3v_camera_set_look(struct camera *c, vec3 *look)
 {
-    c->look = look;
+    c->look = *look;
 }
 
 /**
@@ -112,7 +112,7 @@ void camera_set_look(struct camera *c, vec3 look)
  * @param c - La camera.
  * @param d - Distance de la camera.
  */
-void camera_set_distance(struct camera *c, double d)
+void d3v_camera_set_distance(struct camera *c, double d)
 {
     c->dis = d;
 }
@@ -123,7 +123,7 @@ void camera_set_distance(struct camera *c, double d)
  * @param dw - Déplacement sur la largeur.
  * @param dh - Déplacement sur la hauteur.
  */
-void camera_translate(struct camera *c, double dw, double dh)
+void d3v_camera_translate(struct camera *c, double dw, double dh)
 {
     vec3 t = {
 	dw * c->right.x + dh * c->up.x,
@@ -140,7 +140,7 @@ void camera_translate(struct camera *c, double dw, double dh)
  * @param c - La camera.
  * @param d - Distance à ajouter.
  */
-void camera_add_distance(struct camera *c, double d)
+void d3v_camera_add_distance(struct camera *c, double d)
 {
     if (c->ortho) {
 	if (d > 0) {
@@ -161,7 +161,7 @@ void camera_add_distance(struct camera *c, double d)
  * @param ar - angle par rapport au plan xz.
  * @param ay - angle par rapport à z.
  */
-void camera_set_rotate(struct camera *c, int ar, int ay)
+void d3v_camera_set_rotate(struct camera *c, int ar, int ay)
 {
     c->ar = degree_to_radian(ar);
     c->ay = degree_to_radian(ay);
@@ -173,7 +173,7 @@ void camera_set_rotate(struct camera *c, int ar, int ay)
  * @param ar - angle par rapport au plan xz.
  * @param ay - angle par rapport à z.
  */
-void camera_rotate(struct camera *c, int ar, int ay)
+void d3v_camera_rotate(struct camera *c, int ar, int ay)
 {
     c->ar += degree_to_radian(ar);
     c->ay += degree_to_radian(ay);
@@ -183,7 +183,7 @@ void camera_rotate(struct camera *c, int ar, int ay)
  * Met à jour la camera.
  * @param c - La camera.
  */
-void camera_update(struct camera *c)
+void d3v_camera_update(struct camera *c)
 {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();

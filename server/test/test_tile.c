@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <interface/tile.h>
+#include <tile.h>
 #include <server/tile.h>
 
 #define NB_TILE 10

@@ -8,10 +8,10 @@
 #include <errno.h>
 #include <assert.h>
 
-#include <interface/client.h>
-#include <interface/server.h>
-#include <interface/move.h>
-#include <interface/tile.h>
+#include <client.h>
+#include <server.h>
+#include <move.h>
+#include <tile.h>
 
 #include <utils/graph.h>
 #include <utils/heap.h>

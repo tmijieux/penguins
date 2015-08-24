@@ -1,8 +1,8 @@
 #ifndef MAP_H
 #define MAP_H
 
+#include <move.h>
 #include <utils/graph.h>
-#include <interface/move.h>
 
 void map_init(const char *map_path);
 void map_exit(void);
@@ -15,7 +15,8 @@ extern void (*map_init_graph)(int number_dimensions,
 
 // Retourne l'id de la case d'arrivée dest après un mouvement depuis 
 // la case origin dans une *direction donnée, ou -1 si le mouvement est invalide.
-// Le mappeur peut se permettre de changer la valeur de *direction pour indiquer // au serveur quelle est la prochaine direction à prendre pour avoir 
+// Le mappeur peut se permettre de changer la valeur de *direction pour indiquer
+// au serveur quelle est la prochaine direction à prendre pour avoir 
 // un déplacement en ligne droite sur plusieurs cases
 extern int (*map_get_id_from_move)(int origin,
 				   int *direction,
