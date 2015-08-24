@@ -3,6 +3,8 @@
 #include <utils/vec.h>
 #include <utils/math.h>
 
+#include <d3v/mouse_projection.h>
+
 #include <display/dsp.h>
 #include <display/dtile.h>
 #include <display/mouseclick.h>
@@ -18,45 +20,63 @@ static struct {
     vec3 pos;
 } mp;
 
+
+void dsp_signal_game_thread(vec3 *pos)
+{
+    // display thread
+    mp.pos = *pos;
+    pthread_cond_signal(&mp.cond);
+}
+
 static int get_tile_by_pos(const vec3 *pos)
 {
+    int tile = -1;
+    float min_dis = 999999.f;
     for (int i = 0; i < dsp.tile_count; ++i) {
 	vec3 p; dtile_get_position(dsp.tiles[i], &p);
-	if (math_euclidian_distance(pos, &p) < SHORT_DISTANCE)
-	    return i;
+	float dis;
+	if ((dis = math_euclidian_distance(pos, &p)) < min_dis){
+	    tile = i;
+	    min_dis = dis;
+	}
     }
-    return -1;
+    return tile;
 }
 
 static int check_boundaries(vec3 *pos)
 {
     // TODO: implements
-    return 0;
+    return 1; // return 1 for test
+    // same as if user never click on the background
 }
 
 void display_mc_init(int (*coord_on_tile)(double x, double z),
 		     double z_shoes, double z_feet, double z_head)
 {
     // game thread
-    pthread_attr_init(&mp.attr);
-    pthread_condattr_init(&mp.condattr);
-    pthread_mutexattr_init(&mp.mutattr);
-    pthread_mutex_init(&mp.mut, &mp.mutattr);
     
 }
+
 // PUBLIC (game thread)
 int display_mc_get(struct mouseclick *mc)
 {
     // game thread
     if (!mc)
 	return -2;
+
+    dsp.mouseclick_mode = 1;
+
+    pthread_mutexattr_init(&mp.mutattr);
+    pthread_mutex_init(&mp.mut, &mp.mutattr);
     
+    pthread_condattr_init(&mp.condattr);
     pthread_cond_init(&mp.cond, &mp.condattr);
-    //display_mouseclick_mode(1); //TODO: implements
-	
+    
     pthread_mutex_lock(&mp.mut);
     pthread_cond_wait(&mp.cond, &mp.mut);
-//    dsp_mouseclick_mode(0);
+    
+    dsp.mouseclick_mode = 0;
+    
     pthread_cond_destroy(&mp.cond);
     
     if (!(mc->validclick = check_boundaries(&mp.pos)))
@@ -69,15 +89,4 @@ int display_mc_get(struct mouseclick *mc)
     else
 	mc->t = MC_TILE;
     return 0;
-}
-
-void mc_cond_signal(void)
-{
-    // display thread
-    pthread_cond_signal(&mp.cond);
-}
-
-void mc_set_pos(const vec3 *pos)
-{
-    mp.pos = *pos;
 }

@@ -44,6 +44,8 @@ dpenguin_create(struct model *m, struct texture *t,
  */
 void dpenguin_draw(struct dpenguin *pen)
 {
+    if (!pen)
+	return;
     d3v_object_draw(pen->obj);
 }
 

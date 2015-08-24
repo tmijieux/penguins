@@ -9,6 +9,7 @@
 #include <display/animator.h>
 
 #include <d3v.h>
+#include <d3v/mouse_projection.h>
 
 #include <utils/vec.h>
 #include <utils/math.h>
@@ -207,7 +208,6 @@ static void key_input(int key, int x, int y)
     switch (key) {
     case 'p':
 	dsp.autoplay = !dsp.autoplay;
-	
 	break;
     }
 }
@@ -218,7 +218,11 @@ static void mouse(int button, int state, int x, int y)
     case GLUT_LEFT_BUTTON:
 	switch (state) {
 	case GLUT_UP:
-	    //TODO: implements mouseclick here
+	    if (dsp.mouseclick_mode) {
+		vec3 pos;
+		d3v_mouseproj(&pos, x, y);
+		dsp_signal_game_thread(&pos);
+	    }
 	    break;
 	}
 	break;
@@ -279,6 +283,7 @@ static void init_penguin_stuff(int tile_count, int penguin_count)
     dsp.penguins = calloc(penguin_count, sizeof(*dsp.penguins));
 
     dsp.nb_peng_alloc = 0;
+    dsp.mouseclick_mode = 0;
 }
 
 /**
@@ -375,6 +380,7 @@ int display_exit(void)
 	puts("display thread exited successfully");
 	return 0;
     }
+    
     return -1;
 }
 

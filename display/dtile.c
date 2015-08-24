@@ -90,6 +90,8 @@ struct dtile* dtile_create(struct model *m, struct texture *t,
  */
 void dtile_draw(struct dtile* ti)
 {
+    if (!ti)
+	return;
     if (!d3v_object_is_hidden(ti->obj)) {
 	vec3 pos; char str[15];
 	d3v_object_get_position(ti->obj, &pos);

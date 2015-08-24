@@ -58,25 +58,33 @@ void client_init(int nb_tile)
     client.tile_fish1 = list_create(LIST_DEFAULT__);
     for (int i = 0; i < nb_tile; i++) 
 	parse_tile(i);
+    
+    display_mc_init(NULL, 0., 0., 0.);
 }
 
 int client_place_penguin(void)
 {
+    puts("CLIENT PLACE: user mode start!");
     int tile = 0;
     int ok = 0;
     
-    /* while (!ok) {  */
-    /* 	tile = display_player_chose_tile(); // TODO: adapt this with mc_ */
-    /* 	if (graph_get_fish(client.graph, tile) != 1) { */
-    /* 	    display_blink(BLINK_WRONG, tile); */
-    /* 	} else { */
-    /* 	    display_blink(BLINK_GOOD, tile); */
-    /* 	    ok = 1; */
-    /* 	} */
-    /* } */
+    while (!ok) {
+	struct mouseclick mc;
+    	display_mc_get(&mc);
+	tile = mc.tile_id;
+    	if (graph_get_fish(client.graph, tile) != 1) {
+    	    //display_blink(BLINK_WRONG, tile);
+	    puts("WRONG TILE: must have exactly 1 fish on it");
+    	} else {
+    	    //display_blink(BLINK_GOOD, tile);
+    	    ok = 1;
+    	}
+    }
 
     struct penguin *penguin = penguin_create(tile);
     list_add_element(client.my_penguins, penguin);
+
+    puts("CLIENT PLACE: user mode end!");
     return tile;
 }
 
@@ -118,13 +126,13 @@ static int target_is_reachable(int src, int trg, int *dir, int *jmp)
 	    }
 	    j++;
 	}
-	
     }
     return ok;
 }
 
 void client_play(struct move *ret)
 {
+    puts("CLIENT PLAY: user mode start!");
     int src = -1;
     int target = -1;
     int ok = 0, dir, jmp;
@@ -134,19 +142,27 @@ void client_play(struct move *ret)
 	if (!mc.validclick)
 	    continue;
 	int p = graph_get_player(client.graph, mc.tile_id);
-	if (p == client.id)
+	if (p == client.id) {
 	    src = mc.tile_id;
-	else if (p > 0)
-	    ;//display_blink(BLINK_WRONG, mc.tile_id);
-	else if (mc.t == MC_TILE)
+	    printf("Source set on tile %d\n", mc.tile_id);
+	}
+	else if (p >= 0)
+	    //display_blink(BLINK_WRONG, mc.tile_id);
+	    puts("WRONG TILE: This is the enemy!! Just Look !!!");
+	else if (mc.t == MC_TILE) {
 	    target = mc.tile_id;
+	    printf("Target set on tile %d\n", mc.tile_id);
+	}
 	if (src >= 0 && target >= 0) {
 	    ok = target_is_reachable(src, target, &dir, &jmp);
 	    if (!ok)
-		;//	display_blink(BLINK_WRONG, target);
+		//	display_blink(BLINK_WRONG, target);
+		puts("Oh! we can't reach this "
+		     "delicious-looking fishes from here!");
 	}
     }
     move_set(ret, src, dir, jmp);
+    puts("CLIENT PLAY: user mode end!");
 }
 
 void send_diff(enum diff_type dt, int orig, int dest)

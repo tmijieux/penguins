@@ -28,6 +28,7 @@ struct display {
     int activeLink;
 
     int autoplay;
+    int mouseclick_mode;
 
     struct list *tex_list;
     struct list *mod_list;
@@ -35,5 +36,7 @@ struct display {
 };
 
 extern struct display dsp;
+
+void dsp_signal_game_thread(vec3 *pos);
 
 #endif //DSP_H
