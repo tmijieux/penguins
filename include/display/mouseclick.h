@@ -1,6 +1,11 @@
 #ifndef MOUSECLICK_H
 #define MOUSECLICK_H
 
+#define INVALID_CLICK             -1
+#define DISPLAY_THREAD_STOP       -2
+#define INVALID_MOUSECLICK_STRUCT -3
+
+
 enum mc_object_type {
     MC_TILE,
     MC_PENGUIN

@@ -312,7 +312,9 @@ static void* thread_start(void *args)
 void display_start(void)
 {
     pthread_attr_init(&th.attr);
+    dsp.thread_running = 1;
     pthread_create(&th.t, &th.attr, &thread_start, NULL);
+    
 }
 
 /*** EXITS *****/
@@ -368,6 +370,9 @@ static void exit_thread(void)
     free_penguin_stuff();
     free_d3v_stuff();
     d3v_exit();
+    vec3 pos = { -1., -1., -1. };;
+    dsp.thread_running = 0;
+    dsp_signal_game_thread(&pos);
     pthread_exit(DISPLAY_THREAD_RETVAL);
 }
 
@@ -380,7 +385,6 @@ int display_exit(void)
 	puts("display thread exited successfully");
 	return 0;
     }
-    
     return -1;
 }
 
@@ -423,10 +427,11 @@ int display_add_tile(int id, struct model *m, struct texture *t,
 				       (double)scale, fish_count);
 	if (dsp.tiles[id] == NULL) {
 	    printf("display_add_tile failed\n");
-	    exit(EXIT_FAILURE);
+	    return -1;
 	}
+	return 0;
     }
-    return 0;
+    return -1;
 }
 
 /**
@@ -437,7 +442,7 @@ int display_add_tile(int id, struct model *m, struct texture *t,
  */
 int display_add_penguin(int tile, int player)
 {
-    if (dsp.nb_peng_alloc < dsp.penguin_count) {
+    if (dsp.thread_running && dsp.nb_peng_alloc < dsp.penguin_count) {
 	int texid = player % dsp.penguin_tex_count;
 	struct texture *t = dsp.penguin_tex[texid];
 	vec3 pos; dtile_get_position(dsp.tiles[tile], &pos);
@@ -451,9 +456,9 @@ int display_add_penguin(int tile, int player)
 	
 	dsp.nb_peng_alloc++;
 	record_add(dsp.rec, -1, tile);
-	return 1;
+	return 0;
     }
-    return 0;
+    return -1;
 }
 
 /**
@@ -465,6 +470,8 @@ int display_add_penguin(int tile, int player)
  */
 int display_add_move(int src, int dst)
 {
+    if (!dsp.thread_running)
+	return -1;
     return record_add(dsp.rec, src, dst);
 }
 

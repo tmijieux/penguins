@@ -70,7 +70,8 @@ int client_place_penguin(void)
     
     while (!ok) {
 	struct mouseclick mc;
-    	display_mc_get(&mc);
+	if (display_mc_get(&mc) == DISPLAY_THREAD_STOP)
+	    return -1;
 	tile = mc.tile_id;
     	if (graph_get_fish(client.graph, tile) != 1) {
     	    //display_blink(BLINK_WRONG, tile);
@@ -109,7 +110,6 @@ static void update_tile(int tile)
     graph_set_player(client.graph, tile, tile__get_player(tile));
 }
 
-
 static int target_is_reachable(int src, int trg, int *dir, int *jmp)
 {
     int max_dir = nb_direction(src), ok = 0;
@@ -138,7 +138,10 @@ void client_play(struct move *ret)
     int ok = 0, dir, jmp;
     while (!ok) {
 	struct mouseclick mc;
-	display_mc_get(&mc);
+	if (display_mc_get(&mc) == DISPLAY_THREAD_STOP) {
+	    move_set(ret, -1, -1, -1);
+	    return;
+	}
 	if (!mc.validclick)
 	    continue;
 	int p = graph_get_player(client.graph, mc.tile_id);

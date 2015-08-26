@@ -400,7 +400,7 @@ void server_place_penguins(int nb_player)
 	}
 	server.current_player = player_id;
 	int tile = player_place_penguin(player_id);
-	if (graph_get_player(server.graph, tile) < 0 &&
+	if (tile >= 0 && graph_get_player(server.graph, tile) < 0 &&
 	    graph_get_fish(server.graph, tile) == 1) {
 	    graph_set_player(server.graph, tile, player_id);
 	    log_print(INFO_LOG__, "player %d place penguin "

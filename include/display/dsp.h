@@ -6,6 +6,8 @@
 #include <utils/list.h>
 
 struct display {
+    int thread_running;
+    
 //Plateau
     struct dtile **tiles;
     int tile_count;
@@ -38,5 +40,6 @@ struct display {
 extern struct display dsp;
 
 void dsp_signal_game_thread(vec3 *pos);
+void dsp_set_thread_running_state(int running);
 
 #endif //DSP_H

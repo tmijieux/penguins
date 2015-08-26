@@ -57,15 +57,24 @@ void display_mc_init(int (*coord_on_tile)(double x, double z),
     
 }
 
+static int dsp_run = 0;
+
+void dsp_set_thread_running_state(int running)
+{
+    dsp_run = running;
+}
+
 // PUBLIC (game thread)
 int display_mc_get(struct mouseclick *mc)
 {
     // game thread
     if (!mc)
-	return -2;
-
+	return INVALID_MOUSECLICK_STRUCT;
+    if (!dsp.thread_running)
+    	return DISPLAY_THREAD_STOP;
+    
     dsp.mouseclick_mode = 1;
-
+    
     pthread_mutexattr_init(&mp.mutattr);
     pthread_mutex_init(&mp.mut, &mp.mutattr);
     
@@ -74,13 +83,15 @@ int display_mc_get(struct mouseclick *mc)
     
     pthread_mutex_lock(&mp.mut);
     pthread_cond_wait(&mp.cond, &mp.mut);
-    
     dsp.mouseclick_mode = 0;
     
     pthread_cond_destroy(&mp.cond);
     
+    if (!dsp.thread_running)
+	return DISPLAY_THREAD_STOP;
+
     if (!(mc->validclick = check_boundaries(&mp.pos)))
-	return -1;
+	return INVALID_CLICK;
     
     int tile = get_tile_by_pos(&mp.pos);
     mc->tile_id = tile;

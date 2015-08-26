@@ -49,7 +49,7 @@ static void key_input(unsigned char key, int x, int y)
 	//case 13: /* touche Enter */
 	//break;
     case 27:	/* touche ESC */
-	glutLeaveMainLoop();
+//	glutLeaveMainLoop();
 	scene.exit_callback();
 	break;
     case '5':
@@ -189,7 +189,6 @@ static void scene_draw(void)
 	d3v_object_draw(scene.object_buf[i]);
 
     // add wire and (raster) string HERE !
-
     
     glutSwapBuffers();
     glutPostRedisplay();
