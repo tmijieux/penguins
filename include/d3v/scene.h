@@ -1,8 +1,7 @@
-#ifndef DISPLAY_H
-#define DISPLAY_H
+#ifndef SCENE_H
+#define SCENE_H
 
 #include <d3v.h>
-#include <display.h>
 #include <utils/vec.h>
 
 #define WINDOW_TITLE "Penguin"
@@ -43,4 +42,4 @@ void d3v_scene_start(vec3 *first_look);
 void d3v_init_glut_callback(void);
 
 
-#endif //DISPLAY_H
+#endif //SCENE_H

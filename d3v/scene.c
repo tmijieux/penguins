@@ -9,10 +9,10 @@
 #include <string.h>
 #include <pthread.h>
 
-#include <server/path.h>
+#include <GL/freeglut.h>
+#include <GL/glu.h>
+
 #include <utils/vec.h>
-#include <utils/math.h>
-#include <utils/list.h>
 
 #include <d3v/user_callback.h>
 #include <d3v/scene.h>
