@@ -186,6 +186,8 @@ void player_remove_penguin(int player, int place_phase)
 {
     penguin_count[player] --;
     if (penguin_count[player] <= 0 && !place_phase) {
+	if (!player_can_play(player))
+	    return;
 	player_kick_player(player);
 	log_print(INFO_LOG__, "player %d kicked because "
 		  "he/she has no penguins left\n", player);

@@ -483,12 +483,15 @@ void server_run(void)
     server.place_phase = 1;
     server_place_penguins(nb_player);
     server.place_phase = 0;
-    for (int i = 0; i < nb_player; i++)
+    for (int i = 0; i < nb_player; i++) {
+	if (!player_can_play(i))
+	    continue;
+	
         if (player_get_penguin_count(i) <= 0) {
 	    player_kick_player(i);
 	    log_print(INFO_LOG__, "player %d kicked because "
 		      "he/she has no penguins left\n", i);
 	}
+    }
     server_game(nb_player);
 }
-
