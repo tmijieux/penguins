@@ -25,7 +25,7 @@
 /**
  * Gestion de la scène.
  */
- __so_local struct scene scene;
+struct scene scene __so_local;
 
 /******************************************************/
 /********* EVENT HANDLING *****************************/
@@ -36,9 +36,9 @@
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
-__so_local void d3v_key(unsigned char key, int x, int y)
+__so_local
+void d3v_key(unsigned char key, int x, int y) 
 {
-
     scene.key_input_callback(key, x, y);
     
     switch (key) {
@@ -47,12 +47,10 @@ __so_local void d3v_key(unsigned char key, int x, int y)
 	d3v_camera_set_rotate(scene.cam, -90, 0);
 	d3v_camera_set_distance(scene.cam, 10.);
 	break;
-	//case 13: /* touche Entrée */
-	//break;
     case 9:	// ESC
 	scene.exit_callback();
 	break;
-    case '5':
+    case 84: // 'KP_5'
 	d3v_camera_switch_ortho(scene.cam);
 	break;
     }
@@ -64,7 +62,8 @@ __so_local void d3v_key(unsigned char key, int x, int y)
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
-__so_local void d3v_special_input(int key, int x, int y)
+ __so_local
+void d3v_special_input(int key, int x, int y)
 {
     scene.spe_input_callback(key, x, y);
 }
@@ -76,7 +75,8 @@ __so_local void d3v_special_input(int key, int x, int y)
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
-__so_local void d3v_button(int button, int state, int x, int y)
+ __so_local
+void d3v_button(int button, int state, int x, int y)
 {
     scene.xold = x;
     scene.yold = y;
@@ -105,7 +105,8 @@ __so_local void d3v_button(int button, int state, int x, int y)
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
-__so_local void d3v_mouse_motion(int x, int y)
+ __so_local
+void d3v_mouse_motion(int x, int y)
 {
     if (scene.button == 1) { // bouton gauche
 	d3v_camera_translate(scene.cam,
@@ -125,9 +126,9 @@ __so_local void d3v_mouse_motion(int x, int y)
 __so_local void d3v_reshape(int w, int h)
 {
     if (w > h)
-	glViewport((w-h)/2, 0, h, h);
+       glViewport((w-h)/2, 0, h, h);
     else
-	glViewport(0, (h-w)/2, w, w);
+       glViewport(0, (h-w)/2, w, w);
 }
 
 /*******************************************************/
@@ -169,7 +170,8 @@ static void draw_basis(void)
  * Mise à jour de la lumière. 
  * Dessin des liens, des tuiles et des penguins.
  */
-__so_local void d3v_scene_draw(void)
+ __so_local
+void d3v_scene_draw(void)
 {
     glXMakeCurrent(display, win, ctx);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -200,6 +202,7 @@ __so_local void d3v_scene_draw(void)
 /**
  * Initialisation des propriétés de la scène. Non lié à la partie.
  */
+ __so_local
 void d3v_scene_init(int obj_count_clue)
 {
     scene.cam = d3v_camera_create((vec3) {0.}, 10., -90, 0, 0);
@@ -212,6 +215,7 @@ void d3v_scene_init(int obj_count_clue)
     scene.xold = 0; scene.yold = 0;
 }
 
+__so_local
 void d3v_scene_exit(void)
 {
     d3v_camera_free(scene.cam);
@@ -222,7 +226,8 @@ void d3v_scene_exit(void)
     free(scene.object_buf);
 }
 
-void d3v_scene_start(vec3 *pos) // private;
+__so_local
+void d3v_scene_start(vec3 *pos)
 {
     scene.first_look = *pos;
     d3v_camera_set_look(scene.cam, pos);
@@ -258,4 +263,3 @@ void d3v_set_exit_callback(
 {
     scene.exit_callback = exit_callback;
 }
-

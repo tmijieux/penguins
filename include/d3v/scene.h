@@ -3,9 +3,7 @@
 
 #include <d3v.h>
 #include <utils/vec.h>
-
-
-void scene_mouseclick_mode(int v);
+#include <utils/so.h>
 
 struct scene {
     int key;
@@ -27,10 +25,10 @@ struct scene {
     void (*key_input_callback)(int,int,int);
 };
 
-extern struct scene scene;
+extern struct scene scene __so_local;
 
-void d3v_scene_init(int obj_count_clue);
-void d3v_scene_exit(void);
-void d3v_scene_start(vec3 *first_look);
+void d3v_scene_init(int obj_count_clue) __so_local;
+void d3v_scene_exit(void) __so_local;
+void d3v_scene_start(vec3 *first_look) __so_local;
 
 #endif //SCENE_H

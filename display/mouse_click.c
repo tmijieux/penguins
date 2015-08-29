@@ -10,8 +10,6 @@
 #include <display/dtile.h>
 #include <display/mouseclick.h>
 
-#define SHORT_DISTANCE 0.4
-
 static struct {
     pthread_mutex_t mut;
     pthread_cond_t cond;
@@ -21,13 +19,7 @@ static struct {
     vec3 pos;
 } mp;
 
-
-void dsp_signal_game_thread(vec3 *pos)
-{
-    // display thread
-    mp.pos = *pos;
-    pthread_cond_signal(&mp.cond);
-}
+static int dsp_run = 0;
 
 static int get_tile_by_pos(const vec3 *pos)
 {
@@ -51,41 +43,56 @@ static int check_boundaries(vec3 *pos)
     // same as if user never click on the background
 }
 
-void display_mc_init(int (*coord_on_tile)(double x, double z),
-		     double z_shoes, double z_feet, double z_head)
+static void mutex_init(void)
 {
-    // game thread
+    pthread_mutexattr_init(&mp.mutattr);
+    pthread_mutex_init(&mp.mut, &mp.mutattr);
     
+    pthread_condattr_init(&mp.condattr);
+    pthread_cond_init(&mp.cond, &mp.condattr);
 }
 
-static int dsp_run = 0;
 
+// SHARED OBJECT VISIBILITY
+
+__so_local
 void dsp_set_thread_running_state(int running)
 {
     dsp_run = running;
 }
 
-// PUBLIC (game thread)
+__so_local
+void dsp_signal_game_thread(vec3 *pos)
+{
+    // display thread
+    mp.pos = *pos;
+    pthread_cond_signal(&mp.cond);
+}
+
+
+// GLOBAL VISIBILITY
+
+// game thread
+void display_mc_init(int (*coord_on_tile)(double x, double z),
+		     double z_shoes, double z_feet, double z_head)
+{
+
+    
+}
+
+// game thread
 int display_mc_get(struct mouseclick *mc)
 {
-    // game thread
     if (!mc)
 	return INVALID_MOUSECLICK_STRUCT;
     if (!dsp.thread_running)
     	return DISPLAY_THREAD_STOP;
     
     dsp.mouseclick_mode = 1;
-    
-    pthread_mutexattr_init(&mp.mutattr);
-    pthread_mutex_init(&mp.mut, &mp.mutattr);
-    
-    pthread_condattr_init(&mp.condattr);
-    pthread_cond_init(&mp.cond, &mp.condattr);
-    
+    mutex_init();
     pthread_mutex_lock(&mp.mut);
     pthread_cond_wait(&mp.cond, &mp.mut);
     dsp.mouseclick_mode = 0;
-    
     pthread_cond_destroy(&mp.cond);
     
     if (!dsp.thread_running)

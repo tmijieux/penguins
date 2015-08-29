@@ -73,7 +73,8 @@ int client_place_penguin(void)
 	int ret = display_mc_get(&mc);
 	if (ret == DISPLAY_THREAD_STOP ||
 	    ret == SURRENDER) {
-	    return -1;
+	    tile = -1;
+	    goto end;
 	}
 
 	tile = mc.tile_id;
@@ -88,7 +89,8 @@ int client_place_penguin(void)
 
     struct penguin *penguin = penguin_create(tile);
     list_add_element(client.my_penguins, penguin);
-
+    
+end:
     puts("CLIENT PLACE: user mode end!");
     return tile;
 }
