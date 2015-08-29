@@ -6,10 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <GL/freeglut.h>
-
 #include <utils/vec.h>
-
 #include <display/dtile.h>
 #include <d3v/object.h>
 
@@ -51,8 +48,7 @@ render_string(float x, float y, float z,
 	glRasterPos3f(x + espace * i, y, z);
 
 	// Dessiner le caractère
-	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,
-			    string[i]);
+	//glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
     }
     glColor3f(1.0, 1.0, 1.0);
     //Réactivation

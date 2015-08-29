@@ -1,7 +1,6 @@
 #ifndef DISPLAY_IFACE_H
 #define DISPLAY_IFACE_H
 
-#include <GL/freeglut.h>
 #include <GL/glu.h>
 
 #include <d3v/texture.h>

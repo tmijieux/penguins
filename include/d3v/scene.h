@@ -25,7 +25,6 @@ struct scene {
     void (*mouse_callback)(int,int,int,int);
     void (*spe_input_callback)(int,int,int);
     void (*key_input_callback)(int,int,int);
-    
 };
 
 extern struct scene scene;
@@ -33,7 +32,5 @@ extern struct scene scene;
 void d3v_scene_init(int obj_count_clue);
 void d3v_scene_exit(void);
 void d3v_scene_start(vec3 *first_look);
-void d3v_init_glut_callback(void);
-
 
 #endif //SCENE_H
