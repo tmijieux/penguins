@@ -10,7 +10,6 @@
 
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
-#include <GL/freeglut.h>
 
 #include <utils/vec.h>
 #include <server/path.h>

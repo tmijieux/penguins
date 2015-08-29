@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <math.h>
 
 #include <display.h>
 #include <display/dsp.h>
@@ -14,6 +15,9 @@
 #include <utils/vec.h>
 #include <utils/math.h>
 #include <utils/list.h>
+
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
 #define PENGUIN_FILE "models/penguin.obj"
 
@@ -183,19 +187,19 @@ static void draw(void)
 static void special_input(int key, int x, int y)
 {
     switch (key) {
-    case GLUT_KEY_UP:
+    case 111: // up
 	if (dsp.activeLink < dsp.tile_count - 1)
 	    ++dsp.activeLink;
 	break;
-    case GLUT_KEY_DOWN:
+    case 116: // down
 	if (dsp.activeLink > 0)
 	    --dsp.activeLink;
 	break;
-    case GLUT_KEY_LEFT:
+    case 113: // left
 	if (!anim_run())
 	    display_read_move(REWIND);
 	break;
-    case GLUT_KEY_RIGHT:
+    case 114: // right
 	if (!anim_run())
 	    display_read_move(FORWARD);
 	break;
@@ -204,31 +208,35 @@ static void special_input(int key, int x, int y)
 
 static void key_input(int key, int x, int y)
 {
-    
     switch (key) {
-    case 'p':
+    case 33: // 'p'
 	dsp.autoplay = !dsp.autoplay;
+	if (dsp.autoplay)
+	    puts("autoplay on");
+	else
+	    puts("autoplay off");
 	break;
+    case 39: // 's' for surrender
+	if (dsp.mouseclick_mode) {
+	    vec3 pos = { -INFINITY };
+	    dsp_signal_game_thread(&pos);
+	}
     }
 }
 
 static void mouse(int button, int state, int x, int y)
 {
     switch (button) {
-    case GLUT_LEFT_BUTTON:
-	switch (state) {
-	case GLUT_UP:
-	    if (dsp.mouseclick_mode) {
-		vec3 pos;
-		d3v_mouseproj(&pos, x, y);
-		dsp_signal_game_thread(&pos);
-	    }
-	    break;
+	
+    case Button1:
+	if (state == ButtonRelease && dsp.mouseclick_mode) {
+	    vec3 pos;
+	    d3v_mouseproj(&pos, x, y);
+	    dsp_signal_game_thread(&pos);
 	}
 	break;
     }
 }
-       
 
 /***********************************************************/
 /******* INITIALIZATION AND FREES **************************/
@@ -370,9 +378,10 @@ static void exit_thread(void)
     free_penguin_stuff();
     free_d3v_stuff();
     d3v_exit();
-    vec3 pos = { -1., -1., -1. };;
+    vec3 pos;
     dsp.thread_running = 0;
-    dsp_signal_game_thread(&pos);
+    if (dsp.mouseclick_mode)
+	dsp_signal_game_thread(&pos);
     pthread_exit(DISPLAY_THREAD_RETVAL);
 }
 

@@ -2,14 +2,12 @@
  * @file camera.c
  */
 
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-#include <GL/glut.h>
 #include <GL/glu.h>
-
 #include <utils/math.h>
-
 #include <d3v/camera.h>
 
 struct camera {

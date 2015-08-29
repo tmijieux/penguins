@@ -1,7 +1,6 @@
 #include <stdio.h>
-#include <GL/glut.h>
+#include <stdlib.h>
 #include <GL/glu.h>
-
 #include <d3v/light.h>
 
 /**

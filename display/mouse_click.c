@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <math.h>
 
 #include <utils/vec.h>
 #include <utils/math.h>
@@ -90,6 +91,9 @@ int display_mc_get(struct mouseclick *mc)
     if (!dsp.thread_running)
 	return DISPLAY_THREAD_STOP;
 
+    if (mp.pos.x == -INFINITY)
+	return SURRENDER;
+    
     if (!(mc->validclick = check_boundaries(&mp.pos)))
 	return INVALID_CLICK;
     

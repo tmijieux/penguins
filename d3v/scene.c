@@ -9,7 +9,6 @@
 #include <string.h>
 #include <pthread.h>
 
-#include <GL/freeglut.h>
 #include <GL/glu.h>
 
 #include <utils/vec.h>
@@ -21,10 +20,12 @@
 #include <d3v/light.h>
 #include <d3v/object.h>
 
+#include <d3v/d3v_internal.h>
+
 /**
  * Gestion de la scène.
  */
-struct scene scene;
+ __so_local struct scene scene;
 
 /******************************************************/
 /********* EVENT HANDLING *****************************/
@@ -35,21 +36,20 @@ struct scene scene;
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
-static void key_input(unsigned char key, int x, int y)
+__so_local void d3v_key(unsigned char key, int x, int y)
 {
 
     scene.key_input_callback(key, x, y);
     
     switch (key) {
-    case 'r':
+    case 27: // 'r'
 	d3v_camera_set_look(scene.cam, &scene.first_look);
 	d3v_camera_set_rotate(scene.cam, -90, 0);
 	d3v_camera_set_distance(scene.cam, 10.);
 	break;
-	//case 13: /* touche Enter */
+	//case 13: /* touche Entrée */
 	//break;
-    case 27:	/* touche ESC */
-//	glutLeaveMainLoop();
+    case 9:	// ESC
 	scene.exit_callback();
 	break;
     case '5':
@@ -64,7 +64,7 @@ static void key_input(unsigned char key, int x, int y)
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
-static void special_input(int key, int x, int y)
+__so_local void d3v_special_input(int key, int x, int y)
 {
     scene.spe_input_callback(key, x, y);
 }
@@ -76,28 +76,28 @@ static void special_input(int key, int x, int y)
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
-static void mouse(int button, int state, int x, int y)
+__so_local void d3v_button(int button, int state, int x, int y)
 {
     scene.xold = x;
     scene.yold = y;
 
     scene.mouse_callback(button, state, x, y);
+
     
     switch (button) {
-    case GLUT_LEFT_BUTTON:
+    case Button1:
 	switch (state) {
-	case GLUT_DOWN: scene.button = 1; break;
-	case GLUT_UP: scene.button = 0; break;
+	case ButtonPress:   scene.button = 1; break;
+	case ButtonRelease: scene.button = 0; break;
 	} break;
-    case GLUT_RIGHT_BUTTON:
+    case Button3:
 	switch (state) {
-	case GLUT_DOWN: scene.button = 2; break;
-	case GLUT_UP:   scene.button = 0; break;
+	case ButtonPress:   scene.button = 2; break;
+	case ButtonRelease: scene.button = 0; break;
 	} break;
-    case 3: d3v_camera_add_distance(scene.cam, -0.4); break;
-    case 4: d3v_camera_add_distance(scene.cam, 0.4);  break;
+    case Button4: d3v_camera_add_distance(scene.cam, -0.4); break;
+    case Button5: d3v_camera_add_distance(scene.cam, 0.4);  break;
     }
-    glutPostRedisplay();
 }
 
 /**
@@ -105,7 +105,7 @@ static void mouse(int button, int state, int x, int y)
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
-static void mousemotion(int x, int y)
+__so_local void d3v_mouse_motion(int x, int y)
 {
     if (scene.button == 1) { // bouton gauche
 	d3v_camera_translate(scene.cam,
@@ -115,7 +115,6 @@ static void mousemotion(int x, int y)
 	d3v_camera_rotate(scene.cam, scene.yold-y, scene.xold-x);
     }
     scene.xold = x; scene.yold = y;
-    glutPostRedisplay();
 }
 
 /**
@@ -123,13 +122,12 @@ static void mousemotion(int x, int y)
  * @param w - Largeur de la fenêtre.
  * @param h - Hauteur de la fenêtre.
  */
-static void reshape(int w, int h)
+__so_local void d3v_reshape(int w, int h)
 {
     if (w > h)
 	glViewport((w-h)/2, 0, h, h);
     else
 	glViewport(0, (h-w)/2, w, w);
-    glutPostRedisplay();
 }
 
 /*******************************************************/
@@ -171,8 +169,9 @@ static void draw_basis(void)
  * Mise à jour de la lumière. 
  * Dessin des liens, des tuiles et des penguins.
  */
-static void scene_draw(void)
+__so_local void d3v_scene_draw(void)
 {
+    glXMakeCurrent(display, win, ctx);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     glMatrixMode(GL_MODELVIEW);
@@ -189,12 +188,9 @@ static void scene_draw(void)
 	d3v_object_draw(scene.object_buf[i]);
 
     // add wire and (raster) string HERE !
-    
-    glutSwapBuffers();
-    glutPostRedisplay();
+
+    glXSwapBuffers(display, win);
 }
-
-
 
 /***********************************************************/
 /******* INITIALIZATION AND FREES **************************/
@@ -208,7 +204,8 @@ void d3v_scene_init(int obj_count_clue)
 {
     scene.cam = d3v_camera_create((vec3) {0.}, 10., -90, 0, 0);
     scene.light = d3v_light_create();
-    
+
+    scene.object_count = 0;
     scene.object_buf = calloc(sizeof(*scene.object_buf),
 			      obj_count_clue);
     scene.button = 0;
@@ -223,8 +220,6 @@ void d3v_scene_exit(void)
     for (int i = 0; i < scene.object_count; ++i)
 	d3v_object_free(scene.object_buf[i]);
     free(scene.object_buf);
-
-    glutDestroyWindow(scene.key);
 }
 
 void d3v_scene_start(vec3 *pos) // private;
@@ -264,12 +259,3 @@ void d3v_set_exit_callback(
     scene.exit_callback = exit_callback;
 }
 
-void d3v_init_glut_callback(void)
-{
-    glutDisplayFunc(&scene_draw);
-    glutKeyboardFunc(&key_input);
-    glutSpecialFunc(&special_input);
-    glutMouseFunc(&mouse);
-    glutMotionFunc(&mousemotion);
-    glutReshapeFunc(&reshape);
-}

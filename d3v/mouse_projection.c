@@ -2,7 +2,6 @@
 #include <math.h>
 #include <pthread.h>
 
-#include <GL/freeglut.h>
 #include <GL/glu.h>
 
 #include <utils/math.h>

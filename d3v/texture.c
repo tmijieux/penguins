@@ -3,12 +3,12 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <jpeglib.h>
 #include <fcntl.h>
 
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
-#include <GL/freeglut.h>
 
 #include <server/path.h>
 #include <display/texture.h>

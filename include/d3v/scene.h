@@ -4,12 +4,6 @@
 #include <d3v.h>
 #include <utils/vec.h>
 
-#define WINDOW_TITLE "Penguin"
-#define WINDOW_POSITION_X 200
-#define WINDOW_POSITION_Y 200
-
-#define HEIGHT  700
-#define WIDTH   700
 
 void scene_mouseclick_mode(int v);
 

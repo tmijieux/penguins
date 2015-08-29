@@ -70,8 +70,12 @@ int client_place_penguin(void)
     
     while (!ok) {
 	struct mouseclick mc;
-	if (display_mc_get(&mc) == DISPLAY_THREAD_STOP)
+	int ret = display_mc_get(&mc);
+	if (ret == DISPLAY_THREAD_STOP ||
+	    ret == SURRENDER) {
 	    return -1;
+	}
+
 	tile = mc.tile_id;
     	if (graph_get_fish(client.graph, tile) != 1) {
     	    //display_blink(BLINK_WRONG, tile);
@@ -130,7 +134,7 @@ static int target_is_reachable(int src, int trg, int *dir, int *jmp)
     return ok;
 }
 
-void client_play(struct move *ret)
+void client_play(struct move *retmov)
 {
     puts("CLIENT PLAY: user mode start!");
     int src = -1;
@@ -138,8 +142,10 @@ void client_play(struct move *ret)
     int ok = 0, dir, jmp;
     while (!ok) {
 	struct mouseclick mc;
-	if (display_mc_get(&mc) == DISPLAY_THREAD_STOP) {
-	    move_set(ret, -1, -1, -1);
+	int ret = display_mc_get(&mc);
+	if (ret == DISPLAY_THREAD_STOP ||
+	    ret == SURRENDER) {
+	    move_set(retmov, -1, -1, -1);
 	    return;
 	}
 	if (!mc.validclick)
@@ -164,7 +170,7 @@ void client_play(struct move *ret)
 		     "delicious-looking fishes from here!");
 	}
     }
-    move_set(ret, src, dir, jmp);
+    move_set(retmov, src, dir, jmp);
     puts("CLIENT PLAY: user mode end!");
 }
 
