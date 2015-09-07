@@ -29,7 +29,7 @@ add_test(test_tile test_tile)
 ## TEST COORD
 add_executable(test_coord test_coord.c ../coord.c)
 set_target_properties(test_coord PROPERTIES COMPILE_FLAGS -DTEST)
-target_link_libraries(test_coord m log)
+target_link_libraries(test_coord m log math)
 add_test(test_coord test_coord)
 
 

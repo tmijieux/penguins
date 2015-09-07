@@ -5,8 +5,10 @@
 
 #define __USE_XOPEN 1
 
-#include <math.h>
 #include <stdlib.h>
+#include <math.h>
+#include <stdint.h>
+
 #include <string.h>
 #include <time.h>
 
@@ -100,11 +102,11 @@ void matrix_multiply(vec3 *P, double mat[9])
  * @param b - Exposant.
  * @return int - a exposant b.
  */
-int powi(int a, int p)
+uint64_t powi(uint64_t a, uint64_t p)
 {
-    int b = 1;
+    uint64_t b = 1;
     while (p) {
-	register int c = p%2;
+	register uint64_t c = p%2;
 	b *= a * c + (1 - c);
 	a *= a;
 	p >>= 1;

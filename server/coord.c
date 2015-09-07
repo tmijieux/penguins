@@ -2,26 +2,11 @@
  * @file coord.c
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <utils/log.h>
+#include <utils/math.h>
 #include <server/coord.h>
-
-/**
- * Calcule a à la puissance b.
- * @param a - Facteur.
- * @param b - Exposant.
- * @return int - a exposant b.
- */
-static inline int powi(int a, int b)
-{
-    int p = 1;
-    for (int i = 0; i < b; i++)
-	p *= a;
-    return p;
-}
-
 
 /**
  * Obtenir la longueur du bord du plateau.
@@ -35,7 +20,8 @@ size_t coord_get_length_side(int number_tiles, int number_dimensions)
     int b = number_tiles;
     while (b - a > 1) {
 	int c = (a + b) / 2;
-	if (powi(c, number_dimensions) >= number_tiles)
+        int64_t k = powi(c, number_dimensions);
+	if (k >= number_tiles)
 	    b = c;
 	else
 	    a = c;

@@ -18,7 +18,7 @@ set(PENG_SERVER_SRC
   )
   
 add_executable(penguins_server ${PENG_SERVER_SRC})
-target_link_libraries(penguins_server m dl graph log display list)
+target_link_libraries(penguins_server m dl graph log display list math)
 install(TARGETS penguins_server DESTINATION penguins)
 
 add_subdirectory(test)
