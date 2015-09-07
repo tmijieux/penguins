@@ -23,6 +23,7 @@ struct light {
  * Création de la lumière.
  * @return struct light * - La lumière.
  */
+  __internal
 struct light *d3v_light_create(void)
 {
     struct light *l = malloc(sizeof(*l));
@@ -50,6 +51,7 @@ struct light *d3v_light_create(void)
  * Mise à jour de la lumière.
  * @param l - La lumière.
  */
+__internal
 void d3v_light_update(struct light *l)
 {
     //GLfloat mat[] = { 0.0, -1.0, 0.5, 0.0 };
@@ -61,6 +63,7 @@ void d3v_light_update(struct light *l)
  * Libérer la mémoire utilisé par la lumière.
  * x@param l - La lumière.
  */
+ __internal
 void d3v_light_free(struct light *l)
 {
     free(l);

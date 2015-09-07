@@ -52,16 +52,13 @@ static void mutex_init(void)
     pthread_cond_init(&mp.cond, &mp.condattr);
 }
 
-
-// SHARED OBJECT VISIBILITY
-
-__so_local
+__internal
 void dsp_set_thread_running_state(int running)
 {
     dsp_run = running;
 }
 
-__so_local
+__internal
 void dsp_signal_game_thread(vec3 *pos)
 {
     // display thread
@@ -69,10 +66,6 @@ void dsp_signal_game_thread(vec3 *pos)
     pthread_cond_signal(&mp.cond);
 }
 
-
-// GLOBAL VISIBILITY
-
-// game thread
 void display_mc_init(int (*coord_on_tile)(double x, double z),
 		     double z_shoes, double z_feet, double z_head)
 {

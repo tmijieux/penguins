@@ -1,7 +1,6 @@
 #ifndef DSP_H
 #define DSP_H
 
-
 #include <utils/vec.h>
 #include <utils/list.h>
 

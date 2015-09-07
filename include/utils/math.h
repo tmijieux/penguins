@@ -1,6 +1,7 @@
 #ifndef MATH_H
 #define MATH_H
 
+#include <stdint.h>
 #include <utils/vec.h>
 
 void vec3_normalize(vec3 *v);
@@ -13,7 +14,7 @@ double angle_rotation_pingouin(const vec3 *src, const vec3 *dst);
 double *rotation_matrix(vec3 ax, double angle);
 void matrix_multiply(vec3 *P, double mat[9]);
 
-int powi(int a, int p);
+uint64_t powi(uint64_t a, uint64_t p);
 
 void rand_seed(void);
 int randomint(int max);

@@ -24,16 +24,11 @@
 #define GLX_CONTEXT_MAJOR_VERSION_ARB       0x2091
 #define GLX_CONTEXT_MINOR_VERSION_ARB       0x2092
 
-#ifdef __GNUC__
-#define __so_local  __attribute__ ((visibility ("internal")))
-#else
-#define __so_local
-#endif
 
-__so_local Display *display;
-__so_local Window win;
-__so_local GLXContext ctx;
-__so_local Colormap cmap;
+Display *display __internal;
+Window win __internal;
+GLXContext ctx __internal;
+Colormap cmap __internal ;
 
 typedef GLXContext(*glXCreateContextAttribsARBProc)
 (Display *, GLXFBConfig, GLXContext, Bool, const int *);

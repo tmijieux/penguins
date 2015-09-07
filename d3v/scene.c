@@ -25,7 +25,7 @@
 /**
  * Gestion de la scène.
  */
-struct scene scene __so_local;
+struct scene scene __internal;
 
 /******************************************************/
 /********* EVENT HANDLING *****************************/
@@ -36,7 +36,7 @@ struct scene scene __so_local;
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
-__so_local
+__internal
 void d3v_key(unsigned char key, int x, int y) 
 {
     scene.key_input_callback(key, x, y);
@@ -62,7 +62,7 @@ void d3v_key(unsigned char key, int x, int y)
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
- __so_local
+__internal
 void d3v_special_input(int key, int x, int y)
 {
     scene.spe_input_callback(key, x, y);
@@ -75,7 +75,8 @@ void d3v_special_input(int key, int x, int y)
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
- __so_local
+
+__internal
 void d3v_button(int button, int state, int x, int y)
 {
     scene.xold = x;
@@ -105,7 +106,7 @@ void d3v_button(int button, int state, int x, int y)
  * @param x - Position x de la sourie.
  * @param y - Position y de la sourie.
  */
- __so_local
+__internal
 void d3v_mouse_motion(int x, int y)
 {
     if (scene.button == 1) { // bouton gauche
@@ -123,7 +124,8 @@ void d3v_mouse_motion(int x, int y)
  * @param w - Largeur de la fenêtre.
  * @param h - Hauteur de la fenêtre.
  */
-__so_local void d3v_reshape(int w, int h)
+__internal
+void d3v_reshape(int w, int h)
 {
     if (w > h)
        glViewport((w-h)/2, 0, h, h);
@@ -170,7 +172,7 @@ static void draw_basis(void)
  * Mise à jour de la lumière. 
  * Dessin des liens, des tuiles et des penguins.
  */
- __so_local
+__internal
 void d3v_scene_draw(void)
 {
     glXMakeCurrent(display, win, ctx);
@@ -202,7 +204,7 @@ void d3v_scene_draw(void)
 /**
  * Initialisation des propriétés de la scène. Non lié à la partie.
  */
- __so_local
+__internal
 void d3v_scene_init(int obj_count_clue)
 {
     scene.cam = d3v_camera_create((vec3) {0.}, 10., -90, 0, 0);
@@ -215,7 +217,7 @@ void d3v_scene_init(int obj_count_clue)
     scene.xold = 0; scene.yold = 0;
 }
 
-__so_local
+__internal
 void d3v_scene_exit(void)
 {
     d3v_camera_free(scene.cam);
@@ -226,7 +228,7 @@ void d3v_scene_exit(void)
     free(scene.object_buf);
 }
 
-__so_local
+__internal
 void d3v_scene_start(vec3 *pos)
 {
     scene.first_look = *pos;
