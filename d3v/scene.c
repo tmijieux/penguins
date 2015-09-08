@@ -10,6 +10,7 @@
 #include <pthread.h>
 
 #include <GL/glu.h>
+#include <GL/freeglut.h>
 
 #include <utils/vec.h>
 
@@ -25,7 +26,6 @@
 
 #define ERROR      printf("error: %s\n\n", \
 			  gluErrorString(glGetError()))
-
 
 /**
  * Gestion de la scène.
@@ -48,17 +48,16 @@ void d3v_key(unsigned char key, int x, int y)
 	scene.key_input_callback(key, x, y);
     
     switch (key) {
-    case 27: // 'r'
+    case 'r': // 'r'
 	d3v_camera_set_look(scene.cam, &scene.first_look);
 	d3v_camera_set_rotate(scene.cam, -90, 0);
 	d3v_camera_set_distance(scene.cam, 10.);
 	break;
-    case 9:	// ESC
+    case 27:	// ESC
 	if (scene.exit_callback)
 	    scene.exit_callback();
-	d3v_exit_main_loop(); // maybe remove that
 	break;
-    case 84: // 'KP_5'
+    case '5': // 'KP_5'
 	d3v_camera_switch_ortho(scene.cam);
 	break;
     }
@@ -95,19 +94,20 @@ void d3v_button(int button, int state, int x, int y)
 	scene.mouse_callback(button, state, x, y);
 
     switch (button) {
-    case Button1:
+    case GLUT_LEFT_BUTTON:
 	switch (state) {
-	case ButtonPress:   scene.button = 1; break;
-	case ButtonRelease: scene.button = 0; break;
+	case GLUT_DOWN: scene.button = 1; break;
+	case GLUT_UP: scene.button = 0; break;
 	} break;
-    case Button3:
+    case GLUT_RIGHT_BUTTON:
 	switch (state) {
-	case ButtonPress:   scene.button = 2; break;
-	case ButtonRelease: scene.button = 0; break;
+	case GLUT_DOWN:   scene.button = 2; break;
+	case GLUT_UP: scene.button = 0; break;
 	} break;
-    case Button4: d3v_camera_add_distance(scene.cam, -0.4); break;
-    case Button5: d3v_camera_add_distance(scene.cam, 0.4);  break;
+    case 3: d3v_camera_add_distance(scene.cam, -0.4); break;
+    case 4: d3v_camera_add_distance(scene.cam, 0.4);  break;
     }
+    glutPostRedisplay();
 }
 
 /**
@@ -122,10 +122,13 @@ void d3v_mouse_motion(int x, int y)
 	d3v_camera_translate(scene.cam,
 			 (double) (scene.xold-x) / 70.,
 			 (double) (y-scene.yold) / 70.);
+	glutPostRedisplay();
     } else if (scene.button == 2) { // bouton droit
 	d3v_camera_rotate(scene.cam, scene.yold-y, scene.xold-x);
+	glutPostRedisplay();
     }
     scene.xold = x; scene.yold = y;
+
 }
 
 /**
@@ -184,7 +187,6 @@ static void draw_basis(void)
 __internal
 void d3v_scene_draw(void)
 {
-    glXMakeCurrent(display, win, ctx);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     glMatrixMode(GL_MODELVIEW);
@@ -202,9 +204,8 @@ void d3v_scene_draw(void)
 	d3v_object_draw(scene.object_buf[i]);
 
     // add wire and (raster) string HERE !
-    
-    printf("draw\n");
-    glXSwapBuffers(display, win);
+
+    glutSwapBuffers();
 }
 
 /***********************************************************/
