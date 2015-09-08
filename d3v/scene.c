@@ -54,8 +54,7 @@ void d3v_key(unsigned char key, int x, int y)
 	d3v_camera_set_distance(scene.cam, 10.);
 	break;
     case 27:	// ESC
-	if (scene.exit_callback)
-	    scene.exit_callback();
+	glutLeaveMainLoop();
 	break;
     case '5': // 'KP_5'
 	d3v_camera_switch_ortho(scene.cam);

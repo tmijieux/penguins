@@ -17,8 +17,7 @@
 #include <utils/math.h>
 #include <utils/list.h>
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
+#include <GL/freeglut.h>
 
 #define PENGUIN_FILE "models/wavefront/penguin.obj"
 
@@ -189,19 +188,19 @@ static void draw(void)
 static void special_input(int key, int x, int y)
 {
     switch (key) {
-    case 111: // up
+    case GLUT_KEY_UP: // up
 	if (dsp.activeLink < dsp.tile_count - 1)
 	    ++dsp.activeLink;
 	break;
-    case 116: // down
+    case GLUT_KEY_DOWN: // down
 	if (dsp.activeLink > 0)
 	    --dsp.activeLink;
 	break;
-    case 113: // left
+    case GLUT_KEY_LEFT: // left
 	if (!anim_run())
 	    display_read_move(REWIND);
 	break;
-    case 114: // right
+    case GLUT_KEY_RIGHT: // right
 	if (!anim_run())
 	    display_read_move(FORWARD);
 	break;
@@ -211,14 +210,15 @@ static void special_input(int key, int x, int y)
 static void key_input(int key, int x, int y)
 {
     switch (key) {
-    case 33: // 'p'
+    case 'p': // 'p'
 	dsp.autoplay = !dsp.autoplay;
 	if (dsp.autoplay)
 	    puts("autoplay on");
 	else
 	    puts("autoplay off");
+	d3v_post_redisplay();
 	break;
-    case 39: // 's' for surrender
+    case 's': // 's' for surrender
 	if (dsp.mouseclick_mode) {
 	    vec3 pos = { -INFINITY };
 	    dsp_signal_game_thread(&pos);
@@ -230,8 +230,8 @@ static void mouse(int button, int state, int x, int y)
 {
     switch (button) {
 	
-    case Button1:
-	if (state == ButtonRelease && dsp.mouseclick_mode) {
+    case GLUT_LEFT_BUTTON:
+	if (state == GLUT_DOWN && dsp.mouseclick_mode) {
 	    vec3 pos;
 	    d3v_mouseproj(&pos, x, y);
 	    dsp_signal_game_thread(&pos);
@@ -384,7 +384,6 @@ static void exit_thread(void)
     dsp.thread_running = 0;
     if (dsp.mouseclick_mode)
 	dsp_signal_game_thread(&pos);
-    d3v_exit_main_loop();
 }
 
 int display_exit(void)

@@ -35,11 +35,11 @@ static void glut_init(void)
 {
     int argc;
     glutInit(&argc, NULL);
+    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(WIDTH, HEIGHT);
     glutInitWindowPosition(WINDOW_POSITION_X, WINDOW_POSITION_Y);
     glutCreateWindow("penguin1334");
-
     
     glutDisplayFunc(d3v_scene_draw);
     glutVisibilityFunc(visible);
@@ -101,7 +101,8 @@ int d3v_start(vec3 *pos)
 {
     d3v_scene_start(pos);
     glutMainLoop();
-
+    if (scene.exit_callback)
+	scene.exit_callback();
     return 0;
 }
 
