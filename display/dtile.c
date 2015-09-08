@@ -42,11 +42,17 @@ render_string(float x, float y, float z,
 
     //Couleur du texte
     glColor3f(0.0, 0.0, 0.0);
+    static int load = 0;
+    static char *buf = NULL;
+    if (!load) {
+
+    }
+	
 
     for (int i = 0; i < t; i++) {
 	//Positionnement du caractère
 	glRasterPos3f(x + espace * i, y, z);
-
+	glBitmap(0 ,0, 0, 0, 0, 0, NULL);
 	// Dessiner le caractère
 	//glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
     }

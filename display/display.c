@@ -312,7 +312,7 @@ void display_init(int tile_count, int penguin_count)
 static void* thread_start(void *args)
 {
     d3v_start(&dsp.centroid);
-    return NULL;
+    pthread_exit(DISPLAY_THREAD_RETVAL);
 }
 
 /**
@@ -383,7 +383,7 @@ static void exit_thread(void)
     dsp.thread_running = 0;
     if (dsp.mouseclick_mode)
 	dsp_signal_game_thread(&pos);
-    pthread_exit(DISPLAY_THREAD_RETVAL);
+    d3v_exit_main_loop();
 }
 
 int display_exit(void)
