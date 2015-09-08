@@ -152,7 +152,7 @@ static int create_context(void)
     swa.border_pixel = 0;
     swa.event_mask = KeyPressMask | ButtonPressMask |
 	ButtonReleaseMask | Button1MotionMask | Button3MotionMask |
-	DestroyNotify;
+	StructureNotifyMask | ExposureMask;
     
     win = XCreateWindow(display, RootWindow(display, vi->screen),
 			WINDOW_POSITION_X, WINDOW_POSITION_Y,
@@ -214,7 +214,7 @@ static int create_context(void)
 	// Sync to ensure any errors generated are processed.
 	XSync(display, False);
 	if (!ctx_error_occurred && ctx) {
-	    printf("Created GL 3.0 context\n");
+	    //  printf("Created GL 3.0 context\n");
 	} else {
 	    // Couldn't create GL 3.0 context.
 	    // Fall back to old-style 2.x context.
@@ -248,12 +248,14 @@ static int create_context(void)
 	return -1;
     }
 
+    /*
     // Verifying that context is a direct context
     if (!glXIsDirect(display, ctx)) {
 	printf("Indirect GLX rendering context obtained\n");
     } else {
-	printf("Direct GLX rendering context obtained\n");
+        printf("Direct GLX rendering context obtained\n");
     }
+    */
     return 0;
 }
 
@@ -286,13 +288,26 @@ static void opengl_init(void)
     glLoadIdentity();
 }
 
+static int main_loop_quit = 0;
+static int user_need_redraw = 0;
+static int need_redraw = 1;
+
+void d3v_exit_main_loop(void)
+{
+    main_loop_quit = 1;
+}
+
+void d3v_post_redisplay(void)
+{
+    user_need_redraw = 1;
+}
+
 static int d3v_main_loop(void)
 {
-    int quit = 0;
     XEvent xev;
     
-    while (!quit) {
-	if (XPending(display)) {
+    while (!main_loop_quit) {
+	if (XPending(display) || !need_redraw) {
 	    XNextEvent(display, &xev);
 	    switch (xev.type) {
 	    case KeyPress:
@@ -310,23 +325,31 @@ static int d3v_main_loop(void)
 		d3v_mouse_motion(xev.xmotion.x, xev.xmotion.y);
 		break;
 	    
-	    case ResizeRequest:
-		d3v_reshape(xev.xresizerequest.width,
-			    xev.xresizerequest.height);
+	    case ConfigureNotify:
+		d3v_reshape(xev.xconfigure.width,
+			    xev.xconfigure.height);
 		break;
 
 	    case DestroyNotify:
-		quit = 1;
+		main_loop_quit = 1;
 		break;
 	    
 	    default:
 		break;
 	    };
+	    need_redraw = 1;
 	} else {
+	    if (!need_redraw)
+		continue;
 	    d3v_scene_draw();
+	    if (user_need_redraw) {
+		need_redraw = 1;
+		user_need_redraw = 0;
+	    } else {
+		need_redraw = 0;
+	    }
 	}
     }
-    
     return 0;
 }
 

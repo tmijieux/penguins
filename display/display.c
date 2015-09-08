@@ -20,7 +20,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-#define PENGUIN_FILE "models/penguin.obj"
+#define PENGUIN_FILE "models/wavefront/penguin.obj"
 
 /**
  * Gestion du thread.
@@ -55,7 +55,6 @@ static void display_compute_move(enum SENS s)
     int setPenguin = (tileSrc == -1);
     if (setPenguin)
 	tileSrc = tileDest;
-
     
     int penguin;
     penguin = dtile_get_penguin(dsp.tiles[tileSrc]);
@@ -122,8 +121,10 @@ static void display_read_move(enum SENS s)
 	newMove = record_next(dsp.rec);
     else if (s == REWIND)
 	newMove = record_previous(dsp.rec);
-    if (newMove)
+    if (newMove) {
+	d3v_post_redisplay();
 	display_compute_move(s);
+    }
 }
 
 /*******************************************************/
@@ -162,10 +163,10 @@ static void draw(void)
 {
     int nextMove = !anim_run();
     if (dsp.autoplay)
-	if(nextMove)
+	if (nextMove)
 	    display_read_move(FORWARD);
-    draw_link();
 
+    draw_link();
 
     for (int i = 0; i < dsp.tile_count; ++i)
 	dtile_draw(dsp.tiles[i]);
@@ -416,7 +417,7 @@ int display_exit(void)
  *                  3. augmente le model par 3
  *                  1. Ne fais rien.
  * @param fish_count - Nombre de poissons sur la tuile.
- * @return int - 1 si l'ajout est valide.
+ * @return int  -1 si l'ajout est invalide.
  */
 int display_add_tile(int id, struct model *m, struct texture *t,
 		     double posx, double posy, double posz,

@@ -22,6 +22,11 @@
 
 #include <d3v/d3v_internal.h>
 
+
+#define ERROR      printf("error: %s\n\n", \
+			  gluErrorString(glGetError()))
+
+
 /**
  * Gestion de la scène.
  */
@@ -39,7 +44,8 @@ struct scene scene __internal;
 __internal
 void d3v_key(unsigned char key, int x, int y) 
 {
-    scene.key_input_callback(key, x, y);
+    if (scene.key_input_callback)
+	scene.key_input_callback(key, x, y);
     
     switch (key) {
     case 27: // 'r'
@@ -48,7 +54,9 @@ void d3v_key(unsigned char key, int x, int y)
 	d3v_camera_set_distance(scene.cam, 10.);
 	break;
     case 9:	// ESC
-	scene.exit_callback();
+	if (scene.exit_callback)
+	    scene.exit_callback();
+	d3v_exit_main_loop(); // maybe remove that
 	break;
     case 84: // 'KP_5'
 	d3v_camera_switch_ortho(scene.cam);
@@ -65,7 +73,8 @@ void d3v_key(unsigned char key, int x, int y)
 __internal
 void d3v_special_input(int key, int x, int y)
 {
-    scene.spe_input_callback(key, x, y);
+    if (scene.spe_input_callback)
+	scene.spe_input_callback(key, x, y);
 }
 
 /**
@@ -82,9 +91,9 @@ void d3v_button(int button, int state, int x, int y)
     scene.xold = x;
     scene.yold = y;
 
-    scene.mouse_callback(button, state, x, y);
+    if (scene.mouse_callback)
+	scene.mouse_callback(button, state, x, y);
 
-    
     switch (button) {
     case Button1:
 	switch (state) {
@@ -183,16 +192,18 @@ void d3v_scene_draw(void)
     
     d3v_camera_update(scene.cam);
     d3v_light_update(scene.light);
-
-    scene.draw_callback();
     
+    if (scene.draw_callback)
+	scene.draw_callback();
+	
     draw_basis(); // TODO: option to disable this
     
     for (int i = 0; i < scene.object_count; i++)
 	d3v_object_draw(scene.object_buf[i]);
 
     // add wire and (raster) string HERE !
-
+    
+    printf("draw\n");
     glXSwapBuffers(display, win);
 }
 
@@ -264,4 +275,10 @@ void d3v_set_exit_callback(
     void (*exit_callback)(void))
 {
     scene.exit_callback = exit_callback;
+}
+
+
+void d3v_add_object(struct object *o)
+{
+    scene.object_buf[scene.object_count++] = o;
 }

@@ -27,6 +27,7 @@ add_subdirectory(display)
 add_subdirectory(server)
 add_subdirectory(map)
 add_subdirectory(clients)
+add_subdirectory(assets)
 
 # stackoverflow.com/questions/8934295/
 #  add-source-in-a-subdirectory-to-a-cmake-project

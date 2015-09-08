@@ -262,5 +262,6 @@ int anim_run(void)
 	    return 0;
 	}
     }
+    d3v_post_redisplay();
     return 1;
 }

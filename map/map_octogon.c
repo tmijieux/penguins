@@ -43,8 +43,8 @@ void map_init_graph_(int dimension, int nb_tile, struct graph *graph)
     struct model *octom = NULL, *sqm = NULL;
     if (dimension >= 1 && dimension <= 3) {
 	t = texture_load("textures/glace.jpg");
-        sqm = model_load_wavefront("models/square_tile.obj");
-	octom = model_load_wavefront("models/octogon_tile.obj");
+        sqm = model_load_wavefront("models/wavefront/square_tile.obj");
+	octom = model_load_wavefront("models/wavefront/octogon_tile.obj");
 	display_register_texture(t);
 	display_register_model(sqm);
 	display_register_model(octom);

@@ -37,8 +37,8 @@ void map_init_graph_(int dimension, int nb_tile, struct graph *graph)
     struct model *obtuse = NULL;
     if (dimension <= 3) {
         t = texture_load("textures/glace.jpg");
-        acute = model_load_wavefront("models/acute_tile.obj");
-	obtuse = model_load_wavefront("models/obtuse_tile.obj");
+        acute = model_load_wavefront("models/wavefront/acute_tile.obj");
+	obtuse = model_load_wavefront("models/wavefront/obtuse_tile.obj");
 	display_register_texture(t);
 	display_register_model(acute);
 	display_register_model(obtuse);

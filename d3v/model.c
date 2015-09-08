@@ -104,10 +104,15 @@ model_scan_wavefront(FILE *f, int *vertex_count, int *normal_count,
 struct model *model_load_wavefront(const char *path)
 {
     int fd = openat(binary_dir, path, O_RDONLY);
+    if (fd == -1) {
+		perror(path);
+		exit(EXIT_FAILURE);
+	}
+
     FILE *f = fdopen(fd, "r");
     if (f == NULL) {
-	perror(path);
-	exit(EXIT_FAILURE);
+		perror(path);
+		exit(EXIT_FAILURE);
     }
     int have_uv = 0, have_normal = 0;
     int vertex_count = 0, normal_count = 0, tex_coord_count = 0;

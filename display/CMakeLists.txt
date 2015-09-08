@@ -15,6 +15,3 @@ target_link_libraries(display d3v m GL GLU  jpeg
 
 install(TARGETS display DESTINATION penguins/lib)
 
-install(DIRECTORY models DESTINATION penguins)
-install(DIRECTORY textures DESTINATION penguins)
-

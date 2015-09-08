@@ -99,7 +99,7 @@ void map_init_graph_(int dimension, int nb_tile,
     struct model *m = NULL;
     struct texture *t = NULL;
     if (dimension >= 1 && dimension <= 3) {
-	m = model_load_wavefront("models/triangle_tile.obj");
+	m = model_load_wavefront("models/wavefront/triangle_tile.obj");
         t = texture_load("textures/glace.jpg");
 	display_register_texture(t);
 	display_register_model(m);
