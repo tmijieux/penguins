@@ -1,0 +1,276 @@
+server init __
+server init __ END
+compute neighbours 0
+edge: 3
+compute neighbours 0  __ END
+
+compute neighbours 1
+edge: 4
+compute neighbours 1  __ END
+
+compute neighbours 2
+edge: 4
+compute neighbours 2  __ END
+
+compute neighbours 3
+edge: 4
+compute neighbours 3  __ END
+
+compute neighbours 4
+edge: 4
+compute neighbours 4  __ END
+
+compute neighbours 5
+edge: 4
+compute neighbours 5  __ END
+
+compute neighbours 6
+edge: 2
+compute neighbours 6  __ END
+
+compute neighbours 7
+edge: 4
+compute neighbours 7  __ END
+
+compute neighbours 8
+edge: 6
+compute neighbours 8  __ END
+
+compute neighbours 9
+edge: 6
+compute neighbours 9  __ END
+
+compute neighbours 10
+edge: 6
+compute neighbours 10  __ END
+
+compute neighbours 11
+edge: 6
+compute neighbours 11  __ END
+
+compute neighbours 12
+edge: 6
+compute neighbours 12  __ END
+
+compute neighbours 13
+edge: 4
+compute neighbours 13  __ END
+
+compute neighbours 14
+edge: 4
+compute neighbours 14  __ END
+
+compute neighbours 15
+edge: 6
+compute neighbours 15  __ END
+
+compute neighbours 16
+edge: 6
+compute neighbours 16  __ END
+
+compute neighbours 17
+edge: 6
+compute neighbours 17  __ END
+
+compute neighbours 18
+edge: 6
+compute neighbours 18  __ END
+
+compute neighbours 19
+edge: 6
+compute neighbours 19  __ END
+
+compute neighbours 20
+edge: 4
+compute neighbours 20  __ END
+
+compute neighbours 21
+edge: 4
+compute neighbours 21  __ END
+
+compute neighbours 22
+edge: 6
+compute neighbours 22  __ END
+
+compute neighbours 23
+edge: 6
+compute neighbours 23  __ END
+
+compute neighbours 24
+edge: 6
+compute neighbours 24  __ END
+
+compute neighbours 25
+edge: 6
+compute neighbours 25  __ END
+
+compute neighbours 26
+edge: 6
+compute neighbours 26  __ END
+
+compute neighbours 27
+edge: 4
+compute neighbours 27  __ END
+
+compute neighbours 28
+edge: 4
+compute neighbours 28  __ END
+
+compute neighbours 29
+edge: 6
+compute neighbours 29  __ END
+
+compute neighbours 30
+edge: 6
+compute neighbours 30  __ END
+
+compute neighbours 31
+edge: 6
+compute neighbours 31  __ END
+
+compute neighbours 32
+edge: 6
+compute neighbours 32  __ END
+
+compute neighbours 33
+edge: 6
+compute neighbours 33  __ END
+
+compute neighbours 34
+edge: 4
+compute neighbours 34  __ END
+
+compute neighbours 35
+edge: 4
+compute neighbours 35  __ END
+
+compute neighbours 36
+edge: 6
+compute neighbours 36  __ END
+
+compute neighbours 37
+edge: 6
+compute neighbours 37  __ END
+
+compute neighbours 38
+edge: 6
+compute neighbours 38  __ END
+
+compute neighbours 39
+edge: 6
+compute neighbours 39  __ END
+
+compute neighbours 40
+edge: 6
+compute neighbours 40  __ END
+
+compute neighbours 41
+edge: 4
+compute neighbours 41  __ END
+
+compute neighbours 42
+edge: 2
+compute neighbours 42  __ END
+
+compute neighbours 43
+edge: 4
+compute neighbours 43  __ END
+
+compute neighbours 44
+edge: 4
+compute neighbours 44  __ END
+
+compute neighbours 45
+edge: 4
+compute neighbours 45  __ END
+
+compute neighbours 46
+edge: 4
+compute neighbours 46  __ END
+
+compute neighbours 47
+edge: 4
+compute neighbours 47  __ END
+
+compute neighbours 48
+edge: 3
+compute neighbours 48  __ END
+
+player 0 kicked for invalid penguin place on tile -1
+player 1 place penguin on tile 46
+player 2 place penguin on tile 45
+player 1 place penguin on tile 43
+player 2 place penguin on tile 42
+player_play: 1
+player 1 captured tile 48: +1
+player_play: 2
+player 2 captured tile 44: +1
+player_play: 1
+player 1 captured tile 36: +1
+player_play: 2
+player 2 captured tile 30: +3
+player_play: 1
+player 1 captured tile 40: +3
+player_play: 2
+player 2 captured tile 35: +1
+player_play: 1
+player 1 captured tile 39: +3
+player_play: 2
+player 2 captured tile 23: +3
+player_play: 1
+player 1 captured tile 38: +3
+player_play: 2
+player 2 captured tile 21: +3
+player_play: 1
+player 1 captured tile 1: +3
+player_play: 2
+player 2 captured tile 14: +3
+player_play: 1
+player 1 captured tile 17: +3
+player_play: 2
+player 2 captured tile 25: +3
+player_play: 1
+player 1 captured tile 16: +3
+player_play: 2
+player 2 captured tile 27: +3
+player_play: 1
+player 1 captured tile 2: +3
+player_play: 2
+player 2 captured tile 7: +3
+player_play: 1
+player 1 captured tile 5: +3
+player_play: 2
+player 2 captured tile 41: +2
+player_play: 1
+player 1 captured tile 29: +3
+player_play: 2
+player 2 captured tile 34: +2
+player_play: 1
+player 1 captured tile 37: +2
+player_play: 2
+player 2 captured tile 10: +3
+player_play: 1
+player 1 captured tile 4: +3
+player_play: 2
+player 2 captured tile 12: +2
+player_play: 1
+player 1 captured tile 3: +2
+player_play: 2
+player 2 captured tile 19: +2
+player_play: 1
+player 1 captured tile 11: +2
+player_play: 2
+player 2 captured tile 18: +2
+player 1 kicked because he/she has no penguins left
+player_play: 2
+player 2 captured tile 26: +2
+player_play: 2
+player 2 captured tile 33: +1
+player_play: 2
+player 2 captured tile 31: +1
+player_play: 2
+player 2 captured tile 32: +2
+player_play: 2
+player 2 captured tile 24: +1
+player 2 kicked because he/she has no penguins left
+player 2 also known as libclient11 won with a score of 45!

@@ -57,25 +57,33 @@ static void glut_init(void)
 static void opengl_init(void)
 {
     //Initialisation de l'etat d'OpenGL
-    glClearColor(0.6, 0.9, 0.9, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glClearColor(0.6, 0.9, 0.9, 1.0);
+    glClearColor(.5, .5, .5, 1.);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glColor3f(1.0, 1.0, 1.0);
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT, GL_DIFFUSE);
 
-    glShadeModel(GL_SMOOTH);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(30.0, 1.0, 0.1, 100.0);
+    
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    
+    //glShadeModel(GL_SMOOTH);
     //glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 
     // Parametrage du materiau
-    glEnable(GL_LIGHTING);
-    glEnable(GL_COLOR_MATERIAL);
+    // glEnable(GL_LIGHTING);
+
+    //glPolygonMode(GL_FRONT, GL_FILL);
+
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_NORMALIZE);
-
-    glColorMaterial(GL_FRONT, GL_DIFFUSE);
-    glPolygonMode(GL_FRONT, GL_FILL);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
 }
 
 void d3v_exit_main_loop(void)

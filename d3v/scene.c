@@ -60,6 +60,7 @@ void d3v_key(unsigned char key, int x, int y)
 	d3v_camera_switch_ortho(scene.cam);
 	break;
     }
+    glutPostRedisplay();
 }
 
 /**
@@ -199,7 +200,7 @@ void d3v_scene_draw(void)
 	
     draw_basis(); // TODO: option to disable this
     
-    for (int i = 0; i < scene.object_count; i++)
+    for (int i = 0; i <scene.object_count; ++i)
 	d3v_object_draw(scene.object_buf[i]);
 
     // add wire and (raster) string HERE !
