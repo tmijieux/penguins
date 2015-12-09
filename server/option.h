@@ -18,7 +18,7 @@ struct opt {
 #define RAND_FISH_MAX       5
 #define RAND_DIMENSION_MAX  10
 
-#define DEFAULT_TILE         50
+#define DEFAULT_TILE         49 
 #define DEFAULT_FISH         3
 #define DEFAULT_DIMENSION    2
 #define DEFAULT_MAPNAME      "libmap_hexagon.so"

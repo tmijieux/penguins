@@ -9,6 +9,7 @@
 #include <utils/vec.h>
 #include <display/dtile.h>
 #include <d3v/object.h>
+#include <GL/freeglut.h>
 
 /**
  * Représentation d'une tuile.
@@ -42,19 +43,13 @@ render_string(float x, float y, float z,
 
     //Couleur du texte
     glColor3f(0.0, 0.0, 0.0);
-    static int load = 0;
-    static char *buf = NULL;
-    if (!load) {
-
-    }
-	
 
     for (int i = 0; i < t; i++) {
 	//Positionnement du caractère
 	glRasterPos3f(x + espace * i, y, z);
-	glBitmap(0 ,0, 0, 0, 0, 0, NULL);
+	//glBitmap(0 ,0, 0, 0, 0, 0, NULL);
 	// Dessiner le caractère
-	//glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
+	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
     }
     glColor3f(1.0, 1.0, 1.0);
     //Réactivation
@@ -96,11 +91,11 @@ void dtile_draw(struct dtile* ti)
     if (!ti)
 	return;
     if (!d3v_object_is_hidden(ti->obj)) {
-	vec3 pos; //char str[15];
+	vec3 pos; char str[15];
 	d3v_object_get_position(ti->obj, &pos);
-//	sprintf(str, "%d", ti->fish_count);
-//	render_string(pos.x, pos.y + 0.2,pos.z, str,
-//		      strlen(str), 0.15);
+	sprintf(str, "%d", ti->fish_count);
+	render_string(pos.x, pos.y + 0.2,pos.z, str,
+		      strlen(str), 0.15);
 	d3v_object_draw(ti->obj);
     }
 }

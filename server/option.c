@@ -50,7 +50,7 @@ void print_help(void)
 	 "\t\tset the dimension to N\n"
 	 "\t\tdefault is 2\n\n"
 	 
-	 "\t-m MAP, --map=MAP, --dimension=MAP\n"
+	 "\t-m MAP, --map=MAP\n"
 	 "\t\tset the map to MAP\n"
 	 "\t\tdefault is libmap_hexagon.so\n\n"
 	 
