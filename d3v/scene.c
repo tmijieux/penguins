@@ -203,7 +203,7 @@ void d3v_scene_draw(void)
 
     // add wire and (raster) string HERE !
     
-    printf("draw\n");
+//    printf("draw\n");
     glXSwapBuffers(display, win);
 }
 

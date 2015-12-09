@@ -1,7 +1,5 @@
-set(CMAKE_INSTALL_RPATH 
-  "\$ORIGIN/lib/:"
-  "\$ORIGIN/clients/:"
-  "\$ORIGIN/map/"
+set(CMAKE_INSTALL_RPATH
+  "\$ORIGIN/lib/:\$ORIGIN/clients/:\$ORIGIN/map/"
   )
 
 set(PENG_SERVER_SRC
