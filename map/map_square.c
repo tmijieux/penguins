@@ -1,16 +1,14 @@
-/**
- * @file map_square.c
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
-#include <server/map.h>
-#include <server/coord.h>
-#include <display.h>
-#include <d3v/texture.h>
-#include <d3v/model.h>
+
+#include "map_interface.h"
+#include "server/map.h"
+#include "server/coord.h"
+#include "display/display.h"
+#include "d3v/texture.h"
+#include "d3v/model.h"
 
 static int length;
 
@@ -20,7 +18,7 @@ static int length;
  * @param nb_tile - Nombre de tuiles.
  * @param graph - Graphe du jeu.
  */
-void map_init_graph_(int dimension, int nb_tile, struct graph *graph)
+static void init_graph(int dimension, int nb_tile, struct graph *graph)
 {
     int *coord = malloc(dimension * sizeof(int));
     length = coord_get_length_side(nb_tile, dimension);
@@ -37,7 +35,7 @@ void map_init_graph_(int dimension, int nb_tile, struct graph *graph)
     for (int i = 0; i < nb_tile; i++) {
 	int dim = 1;
 	coord_get_coordinates_from_id(i, nb_tile, length, dimension, coord);
-	
+
         #ifdef USE_GL_DISPLAY__
 	int fish = graph_get_fish(graph, i);
 	switch (dimension) {
@@ -46,7 +44,7 @@ void map_init_graph_(int dimension, int nb_tile, struct graph *graph)
 			     0., 0., coord[0], 0., 0.4, fish);
 	    break;
 	case 2:
-	    display_add_tile(i, m, t, 
+	    display_add_tile(i, m, t,
 			     coord[1], 0., coord[0], 0., 0.4, fish);
 	    break;
 	case 3:
@@ -73,7 +71,7 @@ void map_init_graph_(int dimension, int nb_tile, struct graph *graph)
  * @param nb_tile - Nombre total de tuiles.
  * @return int - Nombre de directions.
  */
-int map_get_number_directions_(int tile, int dimension, int nb_tile)
+static int get_number_directions(int tile, int dimension, int nb_tile)
 {
     return dimension * 2;
 }
@@ -81,61 +79,38 @@ int map_get_number_directions_(int tile, int dimension, int nb_tile)
 /**
  * Obtenir la destination d'un mouvement.
  * @param origin - Origine du mouvement (identifiant de la tuile).
- * @param direction - Direction du mouvement. Le mappeur peut se permettre 
- * de changer sa valeur pour indiquer au serveur quelle est la prochaine 
+ * @param direction - Direction du mouvement. Le mappeur peut se permettre
+ * de changer sa valeur pour indiquer au serveur quelle est la prochaine
  * direction à prendre pour avoir  un déplacement en ligne droite.
  * @param dimension - Dimension du jeu.
  * @param nb_tile - Nombre total de tuiles.
  * @param graph - Graphe du jeu.
  * @return int - Destination du mouvment
  */
-int map_get_id_from_move_(int origin, int *direction, int dimension,
-			  int nb_tile, struct graph *graph)
+static int get_id_from_move(int origin, int *direction, int dimension,
+                            int nb_tile, struct graph *graph)
 {
     int *coord = malloc(dimension * sizeof(*coord));
     int dest;
-    
+
     if (*direction < dimension * 2) {
 	coord_get_coordinates_from_id(origin, nb_tile, length, dimension, coord);
 	coord[*direction / 2] += 1 - 2 * (*direction % 2);
 	dest = coord_get_id_from_coordinates(coord, length, dimension);
     } else
 	dest = -1;
- 
+
     free(coord);
     return dest;
 }
 
-/**
- * Initialisation du graphe.
- * @param int - Dimension du jeu : 1D, 2D, 3D, ...
- * @param int - Nombre de tuiles.
- * @param struct graph * - Graphe du jeu.
- */
-void (*map_init_graph) (int, int, struct graph*) =
-    &map_init_graph_;
+static struct map_methods methods = {
+    .init_graph = &init_graph,
+    .get_number_directions = &get_number_directions,
+    .get_id_from_move = &get_id_from_move,
+};
 
-/**
- * Obtenir le nombre de directions d'une tuile.
- * @param int - Identifiant de la tuile.
- * @param int - Dimension du jeu.
- * @param int - Nombre total de tuiles.
- * @return int - Nombre de directions.
- */
-int (*map_get_number_directions) (int, int, int) =
-    &map_get_number_directions_;
-
-/**
- * Obtenir la destination d'un mouvement.
- * @param int - Origine du mouvement (identifiant de la tuile).
- * @param int * - Direction du mouvement.Le mappeur peut se permettre 
- * de changer sa valeur pour indiquer au serveur quelle est la prochaine 
- * direction à prendre pour avoir  un déplacement en ligne droite.
- * @param int - Dimension du jeu.
- * @param int - Nombre total de tuiles.
- * @param struct graph * - Graphe du jeu.
- * @return int - Destination du mouvment
- */
-int (*map_get_id_from_move) (int, int*, int, int, struct graph*) =
-    &map_get_id_from_move_;
-
+void map_register(struct map_methods* m)
+{
+    *m = methods;
+}

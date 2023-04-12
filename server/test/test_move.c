@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <move.h>
-#include <server/move.h>
+#include <game_interface.h>
+#include <server/move_impl.h>
 #include <server/tile.h>
 #include <server/server.h>
 #include <utils/graph.h>
@@ -39,7 +39,7 @@ void test_get_nb_jump(void)
 void test_set(void)
 {
     struct move m;
-    move_set(&m,2,3,4);
+    move__set(&m,2,3,4);
     assert(m.orig == 2);
     assert(m.direction == 3);
     assert(m.jump_count == 4);

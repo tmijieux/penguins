@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
     path_init(argv[0]);
     d3v_init(1);
     vec3 zero = {0};
-    
+
     struct model *m = model_load_wavefront("penguin.obj");
     struct object *o = d3v_object_create(m, NULL, (vec3){0}, (vec3){0},
 					 (vec3){0.3,0.3,0.3});

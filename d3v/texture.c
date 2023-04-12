@@ -10,8 +10,8 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 
-#include <server/path.h>
-#include <display/texture.h>
+#include <d3v/texture.h>
+#include <d3v/d3v.h>
 
 /**
  * Description d'un texture.
@@ -36,7 +36,7 @@ static unsigned char
     FILE*f;
     unsigned char *line;
 
-    int fd = openat(binary_dir, name, O_RDONLY);
+    int fd = openat(_d3v_binary_dir, name, O_RDONLY);
     if ((f = fdopen(fd, "rb")) == NULL) {
 	perror(name);
 	exit(EXIT_FAILURE);
@@ -45,17 +45,17 @@ static unsigned char
     jpeg_create_decompress(&cinfo);
     jpeg_stdio_src(&cinfo, f);
     jpeg_read_header(&cinfo, TRUE);
-    
+
     if (cinfo.jpeg_color_space == JCS_GRAYSCALE) {
 	fprintf(stdout, "Erreur: %s doit etre de type RGB\n", name);
 	exit(EXIT_FAILURE);
     }
-    
+
     int width = cinfo.image_width;
     int height = cinfo.image_height;
 
     unsigned char *texture = malloc(height * width * 3);
-	
+
     jpeg_start_decompress(&cinfo);
     line = texture;
     while (cinfo.output_scanline < cinfo.output_height) {
@@ -80,7 +80,7 @@ struct texture *texture_load(const char *path)
     struct texture *t = malloc(sizeof(*t));
     glGenTextures(1, &t->tex_id);
     glBindTexture(GL_TEXTURE_2D, t->tex_id);
-    
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     int width, height;

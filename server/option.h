@@ -1,5 +1,5 @@
-#ifndef OPTION_H
-#define OPTION_H
+#ifndef PENGUINS_OPTION_PARSER_H
+#define PENGUINS_OPTION_PARSER_H
 
 #define OPTION_BUF_SIZE 128
 
@@ -25,4 +25,4 @@ struct opt {
 
 void parse_options(int argc, char *argv[], struct opt *opt);
 
-#endif //OPTION_H
+#endif // PENGUINS_OPTION_PARSER_H

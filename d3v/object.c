@@ -2,16 +2,18 @@
  * @file object.c
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 
-#include <utils/vec.h>
+#include "utils/vec.h"
 
-#include <d3v/object.h>
-#include <d3v/model.h>
-#include <d3v/texture.h>
+#include "d3v/d3v.h"
+#include "d3v/object.h"
+#include "d3v/model.h"
+#include "d3v/texture.h"
 
 /**
  * Description d'un objet.
@@ -129,28 +131,30 @@ void d3v_object_draw(struct object *obj)
 {
     if (obj == NULL || obj->hidden)
 	return;
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glTranslated(obj->pos.x, obj->pos.y, obj->pos.z);
-    glRotated(obj->rot.x, 1., 0., 0.);
-    glRotated(obj->rot.y, 0., 1., 0.);
-    glRotated(obj->rot.z, 0., 0., 1.);
-    glScaled(obj->scale.x, obj->scale.y, obj->scale.z);
-    
-    if (obj->colored)
-	glColor3d(obj->color.x, obj->color.y, obj->color.z);
+
+    HANDLE_GL_ERROR(glMatrixMode(GL_MODELVIEW));
+    HANDLE_GL_ERROR(glPushMatrix());
+    HANDLE_GL_ERROR(glTranslated(obj->pos.x, obj->pos.y, obj->pos.z));
+    HANDLE_GL_ERROR(glRotated(obj->rot.x, 1., 0., 0.));
+    HANDLE_GL_ERROR(glRotated(obj->rot.y, 0., 1., 0.));
+    HANDLE_GL_ERROR(glRotated(obj->rot.z, 0., 0., 1.));
+    HANDLE_GL_ERROR(glScaled(obj->scale.x, obj->scale.y, obj->scale.z));
+
+    if (obj->colored) {
+	HANDLE_GL_ERROR(glColor3d(obj->color.x, obj->color.y, obj->color.z));
+    }
 
     if (obj->textured) {
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, obj->tex_id);
+	HANDLE_GL_ERROR(glEnable(GL_TEXTURE_2D));
+        HANDLE_GL_ERROR(glBindTexture(GL_TEXTURE_2D, obj->tex_id));
     } else {
-	glBindTexture(GL_TEXTURE_2D, 0);
+	HANDLE_GL_ERROR(glBindTexture(GL_TEXTURE_2D, 0));
     }
     model_draw(obj->m);
 
     if (obj->textured)
-	glDisable(GL_TEXTURE_2D);
-    glPopMatrix();
+	HANDLE_GL_ERROR(glDisable(GL_TEXTURE_2D));
+    HANDLE_GL_ERROR(glPopMatrix());
 }
 
 /**

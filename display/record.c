@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#include <display/record.h>
+#include "display/record.h"
 
 /**
  * Description d'un mouvement.

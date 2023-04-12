@@ -1,5 +1,5 @@
 
-set(DISPLAY_SRC
+set(_display_src
   animator.c
   display.c
   record.c
@@ -9,9 +9,27 @@ set(DISPLAY_SRC
 )
 find_package(Threads)
 
-add_library(display SHARED ${DISPLAY_SRC})
-target_link_libraries(display d3v m GL GLU  jpeg
-  ${CMAKE_THREAD_LIBS_INIT} ${FREEGLUT_LIBRARIES} math)
+add_library(penguins_display
+  SHARED
+  ${_display_src}
+  )
 
-install(TARGETS display DESTINATION penguins/lib)
+target_include_directories(
+  penguins_display
+  PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+
+target_link_libraries(penguins_display
+  d3v
+  m
+  GL
+  GLU
+  glut
+  jpeg
+  ${CMAKE_THREAD_LIBS_INIT}
+  ${FREEGLUT_LIBRARIES}
+  )
+
+install(TARGETS penguins_display DESTINATION penguins/lib)
 

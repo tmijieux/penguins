@@ -12,6 +12,9 @@
 #include <server/server.h>
 #include <server/player.h>
 #include <server/path.h>
+
+#include <d3v/d3v.h>
+
 #include <utils/log.h>
 #include <utils/math.h>
 
@@ -23,18 +26,6 @@
 #define LOG_LEVEL       INFO_LOG__
 
 
-/**
- * Stop le programme.
- * @param format - Les options souhaitées.
- * @param ... - Autres paramètres.
- */
-static void die(const char *format, ...)
-{
-    va_list ap;
-    va_start(ap, format);
-    vfprintf(stderr, format, ap);
-    exit(EXIT_FAILURE);
-}
 
 /**
  * Récupérer le format d'usage du programme.
@@ -53,9 +44,9 @@ const char *usage(void)
  */
 int main(int argc, char *argv[])
 {
-    /* if (argc < 5) */
-    /* 	die(usage(), argv[0]); */
-    path_init(argv[0]);
+    int dirfd = path_init(argv[0]);
+    d3v_init_asset_path(dirfd);
+
     rand_seed();
     log_init(LOG_LEVEL, SERVER_LOG_FILE);
     struct opt opt;
@@ -72,7 +63,7 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-#endif
+#endif // TEST
 
 /**
  * @mainpage Projet Penguin
@@ -87,7 +78,7 @@ int main(int argc, char *argv[])
  *   <ul>
  *     <li> MAP: Chemin d'accès à une librairie de générateur de cartes.<br>
  *	      (Elles sont installée dans ./install/server/map/) </li>
- *     <li> TILE_COUNT: un entier, nombre de tuiles valides, 
+ *     <li> TILE_COUNT: un entier, nombre de tuiles valides,
  *            où les pingouins stationneront. </li>
  *     <li> MAX_FISH: un entier, maximum de poissons sur une tuile. </li>
  *     <li> DIMENSION: Dimension du graphe, la façon dont les dimensions supérieures sont
@@ -97,7 +88,7 @@ int main(int argc, char *argv[])
  * <h4> Lancer les tests: </h4>
  *   <p> Pour permetre les tests, le projet doit être compilé avec ./debug.sh<br>
  *	 (cmake release désactive les assertions)</p>
- *	
+ *
  *   <p> Se déplacer dans  ./build/debug/, lancer la commande "make check" </p>
  *
  */

@@ -3,33 +3,36 @@
 #include <pthread.h>
 #include <math.h>
 
-#include <display.h>
-#include <display/dsp.h>
-#include <display/record.h>
-#include <display/dtile.h>
-#include <display/dpenguin.h>
-#include <display/animator.h>
-
-#include <d3v.h>
-#include <d3v/mouse_projection.h>
-
-#include <utils/vec.h>
-#include <utils/math.h>
-#include <utils/list.h>
 
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
+// #include <X11/Xutil.h>
+#include <GL/gl.h>
+
+#include "display/display.h"
+#include "display/dsp.h"
+#include "display/record.h"
+#include "display/dtile.h"
+#include "display/dpenguin.h"
+#include "display/animator.h"
+
+#include "d3v/d3v.h"
+#include "d3v/mouse_projection.h"
+
+#include "utils/vec.h"
+#include "utils/math.h"
+#include "utils/list.h"
 
 #define PENGUIN_FILE "models/wavefront/penguin.obj"
 
 /**
  * Gestion du thread.
  */
-static struct {
+struct _display_thread {
     pthread_t t;
     pthread_attr_t attr;
     pthread_mutex_t m;
-} th;
+};
+static struct _display_thread display_thread;
 
 struct display dsp;
 
@@ -45,7 +48,7 @@ enum SENS {
  * Lis et programme les animations à effectuer.
  * @param s - Sens de la lecture.
  */
-static void display_compute_move(enum SENS s)
+static void display_schedule_animations(enum SENS s)
 {
     int tileSrc = (s == FORWARD) ? record_get_current_src(dsp.rec)
 	: record_get_rewind_src(dsp.rec);
@@ -53,14 +56,15 @@ static void display_compute_move(enum SENS s)
 	: record_get_rewind_dest(dsp.rec);
 
     int setPenguin = (tileSrc == -1);
-    if (setPenguin)
+    if (setPenguin) {
 	tileSrc = tileDest;
-    
-    int penguin;
-    penguin = dtile_get_penguin(dsp.tiles[tileSrc]);
+    }
 
-    if (!setPenguin)
+    int penguin = dtile_get_penguin(dsp.tiles[tileSrc]);
+
+    if (!setPenguin) {
 	setPenguin = (tileDest == -1 && s == REWIND);
+    }
     if (setPenguin && penguin != -1) {
 	if (anim_prepare()) {
 	    anim_new_movement(dsp.penguins[penguin], 0, 1);
@@ -69,41 +73,47 @@ static void display_compute_move(enum SENS s)
 	    anim_launch();
 	}
     } else {
-// Calculer le déplacement
+        // Calculer le déplacement
 	if (anim_prepare()) {
 	    if (penguin != -1) {
-		vec3 tile_pos; vec3 pen_pos;
+		vec3 tile_pos;
+                vec3 pen_pos;
+
 		dtile_get_position(dsp.tiles[tileDest], &tile_pos);
 		dpenguin_get_position(dsp.penguins[penguin], &pen_pos);
+
 		float angle = angle_rotation_pingouin(&pen_pos, &tile_pos);
 		int nb_move = NB_MOVE;
-		if(angle <= 360)
+		if(angle <= 360) {
 		    nb_move = NB_MOVE / 2;
-		
+                }
+
 		anim_new_movement(dsp.penguins[penguin], 0, nb_move);
-		if (angle > 360)
+		if (angle > 360) {
 		    anim_set_translation(tile_pos);
+                }
 		anim_set_rotation(angle);
-		
+
 		if (angle <= 360) {
-		    anim_push_movement();		
+		    anim_push_movement();
 		    anim_new_movement(dsp.penguins[penguin], 0, NB_MOVE);
 		    anim_set_translation(tile_pos);
 		}
 		anim_push_movement();
 	    }
 	    int tile = -1;
-	    if (s == FORWARD)
+	    if (s == FORWARD) {
 		tile = tileSrc;
-	    else
+            } else {
 		tile = tileDest;
+            }
 	    anim_new_movement(dsp.tiles[tile], 1, 1);
 	    anim_set_hide(s == FORWARD);
 	    anim_push_movement();
 	    anim_launch();
 	}
     }
-    
+
     if (tileSrc >= 0 && tileDest >= 0) {
 	dtile_set_penguin(dsp.tiles[tileSrc], -1);
 	dtile_set_penguin(dsp.tiles[tileDest], penguin);
@@ -117,13 +127,16 @@ static void display_compute_move(enum SENS s)
 static void display_read_move(enum SENS s)
 {
     int newMove = 0;
-    if (s == FORWARD)
+    if (s == FORWARD) {
 	newMove = record_next(dsp.rec);
-    else if (s == REWIND)
+    }
+    else if (s == REWIND) {
 	newMove = record_previous(dsp.rec);
+    }
+
     if (newMove) {
 	d3v_post_redisplay();
-	display_compute_move(s);
+	display_schedule_animations(s);
     }
 }
 
@@ -131,49 +144,63 @@ static void display_read_move(enum SENS s)
 /************ DRAWING METHODS **************************/
 
 /**
- * Dessine les lignes droites valides à partir d'une tuile pour 
+ * Dessine les lignes droites valides à partir d'une tuile pour
  * atteindre les autres tuiles.
  */
 static void draw_link(void)
 {
-
     // TODO : add support and interface for lines(wire) in d3v
-    //        
+    //
     // and use it here (or not if user know opengl
     //                       can be used like that)
-    
-    if (!dsp.linked)
+
+    if (!dsp.linked) {
 	return;
-    glColor3f(1., 0., 0.);
-    glNormal3f(0., 1., 0.);
+    }
+
+    HANDLE_GL_ERROR(glColor3f(1., 0., 0.));
+    HANDLE_GL_ERROR(glNormal3f(0., 1., 0.));
+
+
+
+    vec3 pos;
+    dtile_get_position(dsp.tiles[dsp.activeLink], &pos);
+
     glBegin(GL_LINES);
-    vec3 pos; dtile_get_position(dsp.tiles[dsp.activeLink], &pos);
-    for (int j = 0; j < dsp.tile_count; j++) {
-	if (dsp.link[dsp.activeLink][j]) {
-	    vec3 pos2; dtile_get_position(dsp.tiles[j], &pos2);
+    for (int j = 0; j < dsp.tile_count; j++)
+    {
+	if (dsp.link[dsp.activeLink][j])
+        {
+	    vec3 pos2;
+            dtile_get_position(dsp.tiles[j], &pos2);
+
 	    glVertex3f(pos.x, pos.y + 0.2, pos.z);
 	    glVertex3f(pos2.x, pos2.y + 0.2, pos2.z);
 	}
     }
-    glEnd();
-    glColor3f(1., 1., 1.); // reset color
+    HANDLE_GL_ERROR(glEnd());
+
+
+    HANDLE_GL_ERROR(glColor3f(1., 1., 1.)); // reset color
 }
 
 static void draw(void)
 {
     int nextMove = !anim_run();
-    if (dsp.autoplay)
-	if (nextMove)
-	    display_read_move(FORWARD);
+    if (dsp.autoplay && nextMove)
+    {
+        display_read_move(FORWARD);
+    }
 
     draw_link();
 
-    for (int i = 0; i < dsp.tile_count; ++i)
+    for (int i = 0; i < dsp.tile_count; ++i) {
 	dtile_draw(dsp.tiles[i]);
+    }
 
-    for (int i = 0; i < dsp.penguin_count; ++i)
+    for (int i = 0; i < dsp.penguin_count; ++i) {
 	dpenguin_draw(dsp.penguins[i]);
-	
+    }
 }
 
 /***********************************************************/
@@ -191,19 +218,27 @@ static void special_input(int key, int x, int y)
     switch (key) {
     case 111: // up
 	if (dsp.activeLink < dsp.tile_count - 1)
+        {
 	    ++dsp.activeLink;
+        }
 	break;
     case 116: // down
 	if (dsp.activeLink > 0)
+        {
 	    --dsp.activeLink;
+        }
 	break;
     case 113: // left
 	if (!anim_run())
+        {
 	    display_read_move(REWIND);
+        }
 	break;
     case 114: // right
 	if (!anim_run())
+        {
 	    display_read_move(FORWARD);
+        }
 	break;
     }
 }
@@ -213,13 +248,15 @@ static void key_input(int key, int x, int y)
     switch (key) {
     case 33: // 'p'
 	dsp.autoplay = !dsp.autoplay;
-	if (dsp.autoplay)
+	if (dsp.autoplay) {
 	    puts("autoplay on");
-	else
+        } else {
 	    puts("autoplay off");
+        }
 	break;
     case 39: // 's' for surrender
-	if (dsp.mouseclick_mode) {
+	if (dsp.mouseclick_mode)
+        {
 	    vec3 pos = { -INFINITY };
 	    dsp_signal_game_thread(&pos);
 	}
@@ -229,9 +266,9 @@ static void key_input(int key, int x, int y)
 static void mouse(int button, int state, int x, int y)
 {
     switch (button) {
-	
     case Button1:
-	if (state == ButtonRelease && dsp.mouseclick_mode) {
+	if (state == ButtonRelease && dsp.mouseclick_mode)
+        {
 	    vec3 pos;
 	    d3v_mouseproj(&pos, x, y);
 	    dsp_signal_game_thread(&pos);
@@ -249,25 +286,18 @@ static void exit_thread(void);
 /**
  * Initialisation des propriétés de la scène. Non lié à la partie.
  */
-static void init_d3v_stuff(void)
+static void load_models_and_textures(void)
 {
     dsp.penguin_model = model_load_wavefront(PENGUIN_FILE);
-    dsp.penguin_tex = malloc(sizeof(*dsp.penguin_tex) * 10);
+    dsp.penguin_tex = malloc(sizeof(*dsp.penguin_tex) * 4);
     dsp.penguin_tex[0] = texture_load("textures/penguin_black.jpg");
     dsp.penguin_tex[1] = texture_load("textures/penguin_red.jpg");
     dsp.penguin_tex[2] = texture_load("textures/penguin_green.jpg");
     dsp.penguin_tex[3] = texture_load("textures/penguin_blue.jpg");
     dsp.penguin_tex_count = 4;
-        
+
     dsp.tex_list = list_create(LIST_DEFAULT__);
     dsp.mod_list = list_create(LIST_DEFAULT__);
-
-
-    d3v_set_draw_callback(&draw);
-    d3v_set_key_input_callback(&key_input);
-    d3v_set_spe_input_callback(&special_input);
-    d3v_set_mouse_callback(&mouse);
-    d3v_set_exit_callback(&exit_thread);
 }
 
 /**
@@ -277,18 +307,20 @@ static void init_d3v_stuff(void)
  */
 static void init_penguin_stuff(int tile_count, int penguin_count)
 {
-    anim_init();
-    dsp.linked = 0; dsp.activeLink = 0;
+    dsp.linked = 0;
+    dsp.activeLink = 0;
     dsp.link = malloc(tile_count * sizeof(*dsp.link));
-    for (int i = 0; i < tile_count; ++i)
+
+    for (int i = 0; i < tile_count; ++i) {
 	dsp.link[i] = calloc(tile_count, sizeof(*dsp.link[0]));
-    
+    }
+
     dsp.tile_count = tile_count;
     dsp.penguin_count = penguin_count;
 
     dsp.autoplay = 0;
     dsp.rec = record_create(tile_count + (penguin_count * 2));
-// *2 -> marge
+    // *2 -> marge
     dsp.tiles = calloc(tile_count, sizeof(*dsp.tiles));
     dsp.penguins = calloc(penguin_count, sizeof(*dsp.penguins));
 
@@ -304,7 +336,15 @@ static void init_penguin_stuff(int tile_count, int penguin_count)
 void display_init(int tile_count, int penguin_count)
 {
     d3v_init(tile_count + penguin_count);
-    init_d3v_stuff();
+    load_models_and_textures();
+
+    d3v_set_draw_callback(&draw);
+    d3v_set_key_input_callback(&key_input);
+    d3v_set_spe_input_callback(&special_input);
+    d3v_set_mouse_callback(&mouse);
+    d3v_set_exit_callback(&exit_thread);
+
+    anim_init();
     init_penguin_stuff(tile_count, penguin_count);
 }
 
@@ -321,10 +361,10 @@ static void* thread_start(void *args)
  */
 void display_start(void)
 {
-    pthread_attr_init(&th.attr);
+    pthread_attr_init(&display_thread.attr);
     dsp.thread_running = 1;
-    pthread_create(&th.t, &th.attr, &thread_start, NULL);
-    
+    pthread_create(&display_thread.t, &display_thread.attr, &thread_start, NULL);
+
 }
 
 /*** EXITS *****/
@@ -337,7 +377,7 @@ static void free_d3v_stuff(void)
 	texture_free(dsp.penguin_tex[i]);
     free(dsp.penguin_tex);
 
-//printf("free penguin model\n");
+    // printf("free penguin model\n");
     model_free(dsp.penguin_model);
 
     while (list_size(dsp.tex_list)>0) {
@@ -345,7 +385,7 @@ static void free_d3v_stuff(void)
 	list_remove_element(dsp.tex_list, 1);
     }
     list_destroy(dsp.tex_list);
-    
+
     while (list_size(dsp.mod_list)>0) {
 	model_free(list_get_element(dsp.mod_list, 1));
 	list_remove_element(dsp.mod_list, 1);
@@ -358,17 +398,20 @@ static void free_d3v_stuff(void)
  */
 static void free_penguin_stuff(void)
 {
-    for (int i = 0; i < dsp.penguin_count; i++)
+    for (int i = 0; i < dsp.penguin_count; i++) {
 	dpenguin_free(dsp.penguins[i]);
+    }
     free(dsp.penguins);
-    
-    for (int i = 0; i < dsp.tile_count; i++)
+
+    for (int i = 0; i < dsp.tile_count; i++) {
 	dtile_free(dsp.tiles[i]);
+    }
     free(dsp.tiles);
-    
+
     record_free(dsp.rec);
-    for (int i = 0; i < dsp.tile_count; ++i)
+    for (int i = 0; i < dsp.tile_count; ++i) {
 	free(dsp.link[i]);
+    }
     free(dsp.link);
 }
 
@@ -382,8 +425,9 @@ static void exit_thread(void)
     d3v_exit();
     vec3 pos;
     dsp.thread_running = 0;
-    if (dsp.mouseclick_mode)
+    if (dsp.mouseclick_mode) {
 	dsp_signal_game_thread(&pos);
+    }
     d3v_exit_main_loop();
 }
 
@@ -391,7 +435,7 @@ int display_exit(void)
 {
     void *retval = NULL;
     puts("Waiting for the user to end the display ...");
-    pthread_join(th.t, &retval);
+    pthread_join(display_thread.t, &retval);
     if (retval == DISPLAY_THREAD_RETVAL) {
 	puts("display thread exited successfully");
 	return 0;
@@ -431,11 +475,11 @@ int display_add_tile(int id, struct model *m, struct texture *t,
     pos.z = (weight * pos.z + posz) / (weight+1);
     weight ++;
     dsp.centroid = pos;
-    
+
     if (id >= 0 && id < dsp.tile_count) {
 	vec3 pos = { posx, posy, posz};
 	dsp.tiles[id] = dtile_create(m, t, pos, (double)angle,
-				       (double)scale, fish_count);
+                                     (double)scale, fish_count);
 	if (dsp.tiles[id] == NULL) {
 	    printf("display_add_tile failed\n");
 	    return -1;
@@ -459,12 +503,13 @@ int display_add_penguin(int tile, int player)
 	vec3 pos; dtile_get_position(dsp.tiles[tile], &pos);
 	dsp.penguins[dsp.nb_peng_alloc]
 	    = dpenguin_create(dsp.penguin_model, t, pos, 0., 0.1);
-	if (dsp.penguins[dsp.nb_peng_alloc] == NULL)
+	if (dsp.penguins[dsp.nb_peng_alloc] == NULL) {
 	    return 0;
+        }
 	dtile_set_penguin(dsp.tiles[tile], dsp.nb_peng_alloc);
-	    
+
 	dpenguin_hide(dsp.penguins[dsp.nb_peng_alloc]);
-	
+
 	dsp.nb_peng_alloc++;
 	record_add(dsp.rec, -1, tile);
 	return 0;
@@ -473,7 +518,7 @@ int display_add_penguin(int tile, int player)
 }
 
 /**
- * Permet au serveur d'ajouter des mouvement dans l'historique de la 
+ * Permet au serveur d'ajouter des mouvement dans l'historique de la
  * partie.
  * @param src - Tuile d'origine du mouvement.
  * @param dst - Tuile de destination du mouvement.
@@ -481,8 +526,9 @@ int display_add_penguin(int tile, int player)
  */
 int display_add_move(int src, int dst)
 {
-    if (!dsp.thread_running)
+    if (!dsp.thread_running) {
 	return -1;
+    }
     return record_add(dsp.rec, src, dst);
 }
 
@@ -499,8 +545,8 @@ void display_add_link(int src, int dst)
 
 /**
  * Permet au créateur de carte de passer un pointer au module
- * d'affichage, donc le thread où l'OpenGL est exécuté peut 
- * en toute sécurité libérer la mémoire associée à la texture 
+ * d'affichage, donc le thread où l'OpenGL est exécuté peut
+ * en toute sécurité libérer la mémoire associée à la texture
  * avant que le thread et le contexte de l'OpenGl termine.
  */
 void display_register_texture(struct texture *t)
@@ -510,8 +556,8 @@ void display_register_texture(struct texture *t)
 
 /**
  * Permet au créateur de carte de passer un pointer au module
- * d'affichage, donc le thread où l'OpenGL est exécuté peut 
- * en toute sécurité libérer la mémoire associée au modèle 
+ * d'affichage, donc le thread où l'OpenGL est exécuté peut
+ * en toute sécurité libérer la mémoire associée au modèle
  * avant que le thread et le contexte de l'OpenGl termine.
  */
 void display_register_model(struct model *m)

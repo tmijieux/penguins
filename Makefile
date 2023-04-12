@@ -10,7 +10,7 @@ debugclean:
 	$(RM) -r build/debug
 
 releaseclean:
-	$(RM) -r build/release 
+	$(RM) -r build/release
 
 docclean:
 	$(RM) -r documentation/html documentation/index.html

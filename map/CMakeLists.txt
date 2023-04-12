@@ -1,17 +1,31 @@
-add_subdirectory(penrose)
-###
-macro(BUILD_MAP name)
-  add_library(map_${name} MODULE map_${name}.c)
-  install(TARGETS map_${name} DESTINATION penguins/map)
-endmacro(BUILD_MAP)
-###
-macro(LINK_MAP name)
-  target_link_libraries(map_${name} ${ARGN})
-endmacro(LINK_MAP)
+
+include_directories(
+  ../include
+  ../server/include
+  )
+
 ### maps:
-BUILD_MAP(square)
-BUILD_MAP(hexagon)
-BUILD_MAP(triangle)
-BUILD_MAP(octogon)
-BUILD_MAP(penrose)
-LINK_MAP(penrose penrose)
+add_library(map_square MODULE map_square.c)
+add_library(map_hexagon MODULE map_hexagon.c)
+add_library(map_triangle MODULE map_triangle.c)
+add_library(map_octogon MODULE map_octogon.c)
+add_library(map_penrose
+  MODULE
+  map_penrose.c
+  penrose/penrose.c
+  penrose/penrose.h
+  )
+
+target_link_libraries(map_square penguins_utils penguins_display)
+target_link_libraries(map_hexagon penguins_utils penguins_display)
+target_link_libraries(map_triangle penguins_utils penguins_display)
+target_link_libraries(map_octogon penguins_utils penguins_display)
+target_link_libraries(map_penrose penguins_utils penguins_display)
+
+
+
+install(TARGETS map_square DESTINATION penguins/map)
+install(TARGETS map_hexagon DESTINATION penguins/map)
+install(TARGETS map_triangle DESTINATION penguins/map)
+install(TARGETS map_octogon DESTINATION penguins/map)
+install(TARGETS map_penrose DESTINATION penguins/map)

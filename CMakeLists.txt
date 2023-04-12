@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.20)
 
 project(penguins)
 set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/install)
@@ -8,20 +8,23 @@ set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/install)
 
 add_definitions(-DUSE_GL_DISPLAY__)
 
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+# set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-if (NOT DEFINED CMAKE_ENABLE_C99)
-  set(CMAKE_ENABLE_C99 "-std=gnu99")
-endif(NOT DEFINED CMAKE_ENABLE_C99)
+set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-allow-shlib-undefined -Wl,-z,defs")
 
-set(CMAKE_C_FLAGS "${CMAKE_ENABLE_C99} -Wall -Wl,-Xld -Wl,--disable-new-dtags")
+if (NOT DEFINED CMAKE_ENABLE_C11)
+  set(CMAKE_ENABLE_C11 "-std=gnu11")
+endif(NOT DEFINED CMAKE_ENABLE_C11)
+
+#set(CMAKE_C_FLAGS "${CMAKE_ENABLE_C11} -Wall -Wl,-Xld -Wl,--disable-new-dtags")
+#set(CMAKE_C_FLAGS "${CMAKE_ENABLE_C11} -Wall -Wl,--disable-new-dtags")
+set(CMAKE_C_FLAGS "${CMAKE_ENABLE_C11} -Wall ")
 
 enable_testing()
 
-include_directories(include)
-
 add_subdirectory(utils)
+
 add_subdirectory(d3v)
 add_subdirectory(display)
 add_subdirectory(server)

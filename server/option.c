@@ -14,12 +14,12 @@ extern int optopt;
 static struct option option[] = {
     { "help", 0, NULL, 'h' },
     { "version", 0, NULL, 'v' },
-	
+
     { "fish", 1, NULL, 'f' },
     { "tile", 1, NULL, 't' },
     { "map", 1, NULL, 'm' },
 
-    { "dim", 1, NULL, 'd' },	
+    { "dim", 1, NULL, 'd' },
     { "dimension", 1, NULL, 'd' },
 
     { 0 }
@@ -45,15 +45,15 @@ void print_help(void)
 	 "\t-f N, --fish=N\n"
 	 "\t\tset the fish count per tile to N\n"
 	 "\t\tdefault is 3\n\n"
-	 
+
 	 "\t-d N, --dim=N, --dimension=N\n"
 	 "\t\tset the dimension to N\n"
 	 "\t\tdefault is 2\n\n"
-	 
+
 	 "\t-m MAP, --map=MAP, --dimension=MAP\n"
 	 "\t\tset the map to MAP\n"
 	 "\t\tdefault is libmap_hexagon.so\n\n"
-	 
+
 	 "\t-v, --version\n"
 	 "\t\tshow penguins' version\n\n"
 
@@ -117,7 +117,7 @@ void parse_options(int argc, char *argv[], struct opt *opt)
     opt->fish = DEFAULT_FISH;
     opt->dim = DEFAULT_DIMENSION;
     strncpy(opt->mapname, DEFAULT_MAPNAME, OPTION_BUF_SIZE);
-    
+
     while ((c = getopt_long(argc, argv, "+vhf:t:d:m:", option, NULL)) != -1) {
 	random = 0;
 	if (character_is_in_string(c, "ftdm") && optarg_is_random())

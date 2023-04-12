@@ -2,12 +2,12 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <server/map.h>
-#include <server/coord.h>
+#include "server/map.h"
+#include "server/coord.h"
 
-#include <display.h>
-#include <d3v/texture.h>
-#include <d3v/model.h>
+#include "display/display.h"
+#include "d3v/texture.h"
+#include "d3v/model.h"
 
 static int length;
 
@@ -34,7 +34,7 @@ static inline int odd(int x)
  * @param nb_tile - Nombre de tuiles.
  * @param graph - Graphe du jeu.
  */
-void map_init_graph_(int dimension, int nb_tile, struct graph *graph)
+static void init_graph(int dimension, int nb_tile, struct graph *graph)
 {
     int *coord = malloc(dimension * sizeof(int));
     length = coord_get_length_side(nb_tile, dimension);
@@ -55,43 +55,43 @@ void map_init_graph_(int dimension, int nb_tile, struct graph *graph)
 	coord_get_coordinates_from_id(i, nb_tile, length,
 				      dimension, coord);
 	int odd_ = odd(coord[0] + coord[1]);
-	
+
         #ifdef USE_GL_DISPLAY__
 	int fish = graph_get_fish(graph, i);
 	switch (dimension) {
 	case 1:
-	    display_add_tile(i, odd_ ? octom : sqm, t, 
+	    display_add_tile(i, odd_ ? octom : sqm, t,
 			     0., 0., coord[0], 0.,
 			     odd_ ? 0.4 : 0.25, fish);
-	     break;
-	 case 2:
-	     display_add_tile(i, odd_ ? octom : sqm, t, 
-			      coord[1], 0., coord[0], 0.,
-			      odd_ ? 0.4 : 0.25, fish);
-	     break;
-	 case 3:
-	     display_add_tile(i, odd_ ? octom : sqm, t, 
-			      coord[1], coord[2], coord[0], 0.,
-			      odd_ ? 0.4 : 0.25, fish);
-	     break;
-	 default:
-	     break;
-	 }
-	 #endif
-	 for (int j = 0; j < dimension; j++) {
-	     if (coord[j] + 1 < length && i + dim < nb_tile)
-		 graph_add_edge(graph, i, i + dim);
-	     dim *= length;
-	 }
-	 if (odd_ && coord[0] + 1 < length) {
-	     if (coord[1] + 1 < length && i + length + 1 < nb_tile) 
-		 graph_add_edge(graph, i, i + length + 1);
-	     if (coord[1] - 1 >= 0 && i - length + 1 >= 0)
-		 graph_add_edge(graph, i, i - length + 1);
-	 }
-     }
-     free(coord);
- }
+            break;
+        case 2:
+            display_add_tile(i, odd_ ? octom : sqm, t,
+                             coord[1], 0., coord[0], 0.,
+                             odd_ ? 0.4 : 0.25, fish);
+            break;
+        case 3:
+            display_add_tile(i, odd_ ? octom : sqm, t,
+                             coord[1], coord[2], coord[0], 0.,
+                             odd_ ? 0.4 : 0.25, fish);
+            break;
+        default:
+            break;
+        }
+        #endif
+        for (int j = 0; j < dimension; j++) {
+            if (coord[j] + 1 < length && i + dim < nb_tile)
+                graph_add_edge(graph, i, i + dim);
+            dim *= length;
+        }
+        if (odd_ && coord[0] + 1 < length) {
+            if (coord[1] + 1 < length && i + length + 1 < nb_tile)
+                graph_add_edge(graph, i, i + length + 1);
+            if (coord[1] - 1 >= 0 && i - length + 1 >= 0)
+                graph_add_edge(graph, i, i - length + 1);
+        }
+    }
+    free(coord);
+}
 
 /**
  * Obtenir le nombre de directions d'une tuile.
@@ -100,82 +100,61 @@ void map_init_graph_(int dimension, int nb_tile, struct graph *graph)
  * @param nb_tile - Nombre total de tuiles.
  * @return int - Nombre de directions.
  */
-int map_get_number_directions_(int tile, int dimension, int nb_tile)
- {
-     if (dimension == 1)
-	 return 2;
+static int get_number_directions(int tile, int dimension, int nb_tile)
+{
+    if (dimension == 1)
+        return 2;
 
-     int *coord = malloc(dimension * sizeof(int));
-     coord_get_coordinates_from_id(tile, nb_tile, length, dimension, coord);
-     int odd_ = odd(coord[0] + coord[1]);
-     free(coord);
-     return dimension * 2 + 4 * odd_;
- }
+    int *coord = malloc(dimension * sizeof(int));
+    coord_get_coordinates_from_id(tile, nb_tile, length, dimension, coord);
+    int odd_ = odd(coord[0] + coord[1]);
+    free(coord);
+    return dimension * 2 + 4 * odd_;
+}
 
 /**
  * Obtenir la destination d'un mouvement.
  * @param origin - Origine du mouvement (identifiant de la tuile).
- * @param direction - Direction du mouvement. Le mappeur peut se permettre 
- * de changer sa valeur pour indiquer au serveur quelle est la prochaine 
+ * @param direction - Direction du mouvement. Le mappeur peut se permettre
+ * de changer sa valeur pour indiquer au serveur quelle est la prochaine
  * direction à prendre pour avoir  un déplacement en ligne droite.
  * @param dimension - Dimension du jeu.
  * @param nb_tile - Nombre total de tuiles.
  * @param graph - Graphe du jeu.
  * @return int - Destination du mouvment
  */
-int map_get_id_from_move_(int origin, int *direction, int dimension,
-			   int nb_tile, struct graph *graph)
- {
-     int *coord = malloc(dimension * sizeof(*coord));
-     coord_get_coordinates_from_id(origin, nb_tile, length, dimension, coord);
-     int odd_ = odd(coord[0] + coord[1]);
-     int dest;
+static int get_id_from_move(int origin, int *direction, int dimension,
+                            int nb_tile, struct graph *graph)
+{
+    int *coord = malloc(dimension * sizeof(*coord));
+    coord_get_coordinates_from_id(origin, nb_tile, length, dimension, coord);
+    int odd_ = odd(coord[0] + coord[1]);
+    int dest;
 
-     if (*direction < dimension * 2) {	
-	 coord[*direction / 2] += 1 - 2 * (*direction % 2);
-	 dest = coord_get_id_from_coordinates(coord, length, dimension);
-     } else if (odd_ && *direction < (dimension * 2 + 4)) { // diagonal direction
-	 int diag_direction = *direction - 2 * dimension;
-	 coord[0] += 1 - 2 * (diag_direction % 2);
-	 coord[1] += 1 - 2 * (diag_direction < 2);
-	 dest = coord_get_id_from_coordinates(coord, length, dimension);
-    } else
+    if (*direction < dimension * 2) {
+        coord[*direction / 2] += 1 - 2 * (*direction % 2);
+        dest = coord_get_id_from_coordinates(coord, length, dimension);
+    } else if (odd_ && *direction < (dimension * 2 + 4)) { // diagonal direction
+        int diag_direction = *direction - 2 * dimension;
+        coord[0] += 1 - 2 * (diag_direction % 2);
+        coord[1] += 1 - 2 * (diag_direction < 2);
+        dest = coord_get_id_from_coordinates(coord, length, dimension);
+    } else {
 	dest = -1;
- 
+    }
+
     free(coord);
     return dest;
 }
 
-/**
- * Initialisation du graphe.
- * @param int - Dimension du jeu : 1D, 2D, 3D, ...
- * @param int - Nombre de tuiles.
- * @param struct graph * - Graphe du jeu.
- */
-void (*map_init_graph) (int, int, struct graph*) =
-    &map_init_graph_;
 
-/**
- * Obtenir le nombre de directions d'une tuile.
- * @param int - Identifiant de la tuile.
- * @param int - Dimension du jeu.
- * @param int - Nombre total de tuiles.
- * @return int - Nombre de directions.
- */
-int (*map_get_number_directions) (int, int, int) =
-    &map_get_number_directions_;
+static struct map_methods methods = {
+    .init_graph = &init_graph,
+    .get_number_directions = &get_number_directions,
+    .get_id_from_move = &get_id_from_move,
+};
 
-/**
- * Obtenir la destination d'un mouvement.
- * @param int - Origine du mouvement (identifiant de la tuile).
- * @param int * - Direction du mouvement.Le mappeur peut se permettre 
- * de changer sa valeur pour indiquer au serveur quelle est la prochaine 
- * direction à prendre pour avoir  un déplacement en ligne droite.
- * @param int - Dimension du jeu.
- * @param int - Nombre total de tuiles.
- * @param struct graph * - Graphe du jeu.
- * @return int - Destination du mouvment
- */
-int (*map_get_id_from_move) (int, int*, int, int, struct graph*) =
-    &map_get_id_from_move_;
-
+void map_register(struct map_methods* m)
+{
+    *m = methods;
+}

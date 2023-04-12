@@ -11,11 +11,13 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 
-#include <utils/vec.h>
-#include <server/path.h>
-#include <d3v/model.h>
+#include "utils/vec.h"
+#include "d3v/model.h"
+#include "d3v/d3v.h"
 
 #define LINE_SIZE 128
+
+
 
 /**
  * Description d'un vertex.
@@ -56,7 +58,7 @@ static int model_wavefront_face_vertex_count(char *line)
 
 /**
  * Lecture du wavefront.
- * @param f - 
+ * @param f -
  * @param vertex_count - Fichier wavefront.
  * @param normal_count - Nombre de vertex.
  * @param tex_coord_count - Nombre de coordonnées de
@@ -68,12 +70,13 @@ static int model_wavefront_face_vertex_count(char *line)
  */
 static int
 model_scan_wavefront(FILE *f, int *vertex_count, int *normal_count,
-		     int *tex_coord_count, int *face_count, 
+		     int *tex_coord_count, int *face_count,
 		     int *uv, int *normal)
 {
     char line[LINE_SIZE];
     *uv = -1;
-    while (fgets(line, LINE_SIZE, f) != NULL) {
+    while (fgets(line, LINE_SIZE, f) != NULL)
+    {
 	char tmp = line[2];
 	line[2] = 0;
 	if (strcmp(line, "v ") == 0) {
@@ -103,23 +106,25 @@ model_scan_wavefront(FILE *f, int *vertex_count, int *normal_count,
  */
 struct model *model_load_wavefront(const char *path)
 {
-    int fd = openat(binary_dir, path, O_RDONLY);
+
+    printf("_d3v_binary_dir=%d\n", _d3v_binary_dir);
+    int fd = openat(_d3v_binary_dir, path, O_RDONLY);
     if (fd == -1) {
-		perror(path);
-		exit(EXIT_FAILURE);
-	}
+        perror(path);
+        exit(EXIT_FAILURE);
+    }
 
     FILE *f = fdopen(fd, "r");
     if (f == NULL) {
-		perror(path);
-		exit(EXIT_FAILURE);
+        perror(path);
+        exit(EXIT_FAILURE);
     }
     int have_uv = 0, have_normal = 0;
     int vertex_count = 0, normal_count = 0, tex_coord_count = 0;
     int face_count = 0;
     int b = model_scan_wavefront(f, &vertex_count, &normal_count,
-				     &tex_coord_count, &face_count,
-				     &have_uv, &have_normal);
+                                 &tex_coord_count, &face_count,
+                                 &have_uv, &have_normal);
     if (!b) {
 	fprintf(stderr, "%s model load failed.", path);
 	return NULL;
@@ -128,11 +133,11 @@ struct model *model_load_wavefront(const char *path)
     vec3 *vertex = malloc(sizeof(*vertex) * vertex_count);
     vec3 *normal = malloc(sizeof(*normal) * normal_count);
     vec2 *tex_coord = malloc(sizeof(*tex_coord) * tex_coord_count);
-    
+
     int *vertex_index = malloc(sizeof(*vertex_index) * face_count * 3);
     int *normal_index = malloc(sizeof(*normal_index) * face_count * 3);
     int *tex_coord_index = malloc(sizeof(*tex_coord_index) * face_count * 3);
-    
+
     normal_count = tex_coord_count = vertex_count = face_count = 0;
     char line[LINE_SIZE];
     while (fgets(line, LINE_SIZE, f) != NULL) {
@@ -176,7 +181,7 @@ struct model *model_load_wavefront(const char *path)
     fclose(f);
     struct model *m = malloc(sizeof(*m));
     m->buffer = malloc(sizeof(*m->buffer) * 3*face_count);
-    
+
     for (int i = 0; i < 3*face_count; i++) {
 	m->buffer[i].pos = vertex[vertex_index[i]-1];
 	if (have_normal)
@@ -186,16 +191,18 @@ struct model *model_load_wavefront(const char *path)
     }
     m->uv = have_uv; m->normal = have_normal;
     free(vertex); free(vertex_index);
-    free(normal); free(normal_index); 
+    free(normal); free(normal_index);
     free(tex_coord); free(tex_coord_index);
     m->vcount = 3*face_count;
 
-    // OpenGL 
-    glGenBuffers(1, &m->vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, m->vbo);
-    glBufferData(GL_ARRAY_BUFFER,
-		 m->vcount*sizeof(*m->buffer), m->buffer,
-		 GL_STATIC_DRAW);
+    // OpenGL
+    HANDLE_GL_ERROR(glGenBuffers(1, &m->vbo));
+    HANDLE_GL_ERROR(glBindBuffer(GL_ARRAY_BUFFER, m->vbo));
+    HANDLE_GL_ERROR(
+        glBufferData(GL_ARRAY_BUFFER,
+                     m->vcount*sizeof(*m->buffer), m->buffer,
+                     GL_STATIC_DRAW)
+    );
     return m;
 }
 
@@ -205,26 +212,28 @@ struct model *model_load_wavefront(const char *path)
  */
 void model_draw(struct model *m)
 {
-    glBindBuffer(GL_ARRAY_BUFFER, m->vbo);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(3, GL_DOUBLE, sizeof(struct vertex), NULL);
+    HANDLE_GL_ERROR(glBindBuffer(GL_ARRAY_BUFFER, m->vbo));
+    HANDLE_GL_ERROR(glEnableClientState(GL_VERTEX_ARRAY));
+    HANDLE_GL_ERROR(glVertexPointer(3, GL_DOUBLE, sizeof(struct vertex), NULL));
     if (m->normal) {
-	glEnableClientState(GL_NORMAL_ARRAY);
-	glNormalPointer(GL_DOUBLE, sizeof(struct vertex),
-			(void*)offsetof(struct vertex, normal));
+	HANDLE_GL_ERROR(glEnableClientState(GL_NORMAL_ARRAY));
+	HANDLE_GL_ERROR(glNormalPointer(GL_DOUBLE, sizeof(struct vertex),
+                                        (void*)offsetof(struct vertex, normal)));
     }
     if (m->uv) {
-	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	glTexCoordPointer(2, GL_DOUBLE, sizeof(struct vertex),
-			  (void*)offsetof(struct vertex, tex_coord));
+	HANDLE_GL_ERROR(glEnableClientState(GL_TEXTURE_COORD_ARRAY));
+	HANDLE_GL_ERROR(glTexCoordPointer(2, GL_DOUBLE, sizeof(struct vertex),
+                                          (void*)offsetof(struct vertex, tex_coord)));
     }
-    glDrawArrays(GL_TRIANGLES, 0, m->vcount);
+    HANDLE_GL_ERROR(glDrawArrays(GL_TRIANGLES, 0, m->vcount));
 
-    if (m->normal)
-	glDisableClientState(GL_NORMAL_ARRAY);
-    if (m->uv)
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    if (m->normal) {
+	HANDLE_GL_ERROR(glDisableClientState(GL_NORMAL_ARRAY));
+    }
+    if (m->uv) {
+	HANDLE_GL_ERROR(glDisableClientState(GL_TEXTURE_COORD_ARRAY));
+    }
+    HANDLE_GL_ERROR(glDisableClientState(GL_VERTEX_ARRAY));
 }
 
 /**

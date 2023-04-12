@@ -90,7 +90,7 @@ void d3v_camera_switch_ortho(struct camera *c)
 /**
  * Libère la mémoire occupé par la camera.
  * @param c - La camera.
- */ 
+ */
 void d3v_camera_free(struct camera *c)
 {
     free(c);

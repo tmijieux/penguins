@@ -39,7 +39,7 @@ dpenguin_create(struct model *m, struct texture *t,
 }
 
 /**
- * Dessiner le pinguoin. 
+ * Dessiner le pingouin.
  * @param pen - Le pingouin.
  */
 void dpenguin_draw(struct dpenguin *pen)
@@ -70,7 +70,7 @@ void dpenguin_rotate(struct dpenguin *pen, double a)
 {
     d3v_object_set_orientation(pen->obj, (vec3) { 0., a, 0. });
 }
-		
+
 /**
  * Obtenir la position du pingouin.
  * @param pen - Le pingouin.

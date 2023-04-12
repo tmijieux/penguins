@@ -11,6 +11,7 @@
 
 #include <server/path.h>
 
+
 #define PATH_MAX_ 100
 
 int binary_dir;
@@ -22,7 +23,7 @@ int binary_dir;
  * Ouverture d'un dossier.
  * @param str - Dossier à ouvrir.
  */
-void path_init(const char *str)
+int path_init(const char *str)
 {
 #ifndef TEST
     char *path = strndup(str, PATH_MAX_);
@@ -39,6 +40,7 @@ void path_init(const char *str)
 #ifndef TEST
     free(path);
 #endif
+    return binary_dir;
 }
 
 /**

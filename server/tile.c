@@ -4,9 +4,10 @@
 
 #include <math.h>
 
-#include <utils/graph.h>
-#include <server/server.h>
-#include <server/tile.h>
+#include "game_interface.h"
+#include "utils/graph.h"
+#include "server/server.h"
+#include "server/tile.h"
 
 #ifndef TEST
 #define STATIC static
@@ -21,7 +22,7 @@ STATIC struct graph *graph = NULL;
  * Initialisation de la représentation des tuiles.
  * @param g - Graphe du jeu.
  */
-void tile_init(struct graph *g)
+void tile_module_init(struct graph *g)
 {
     graph = g;
 }
@@ -30,7 +31,7 @@ void tile_init(struct graph *g)
  * Effectuer les traitements nécessaire à la fermeture
  * du jeu.
  */
-void tile_exit(void)
+void tile_module_exit(void)
 {
     graph = NULL;
 }
@@ -74,7 +75,7 @@ int tile__get_neighbour_count(int tile_id)
  * @param tile_id - Identidiant de la tuile.
  * @return int * - Tableau des tuiles voisines.
  */
-int *tile__get_neighbour(int tile_id)
+const int *tile__get_neighbour(int tile_id)
 {
     return graph_get_neighbours(graph, tile_id);
 }

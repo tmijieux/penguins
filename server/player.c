@@ -25,9 +25,9 @@ static void player_init_score(void)
 /**
  * Initialisation du module player.
  */
-void player_init(void)
+void player_module_init(void)
 {
-    client_init();
+    client_module_init();
     player_count = client_get_client_count();
     if (score == NULL)
 	score = calloc(player_count, sizeof(*score));
@@ -44,7 +44,7 @@ void player_init(void)
 /**
  * Libération de la mémoire occupée par le module player.
  */
-void player_exit(void)
+void player_module_exit(void)
 {
     player_count = 0;
     free(score);
@@ -53,7 +53,8 @@ void player_exit(void)
     state = NULL;
     free(penguin_count);
     penguin_count = NULL;
-    client_exit();
+
+    client_module_exit();
 }
 
 /**
@@ -110,12 +111,12 @@ void player_score_add(int player, int fish)
  * @param player - Identifiant du joueur.
  * @param move - Mouvement à remplir.
  */
-void player_play(int player, struct move *move)
+void player_play(int player_id, struct move *move)
 {
-    log_print(DEBUG_LOG__, "player_play: %d\n", player);
-    void (*play__) (struct move*) =
-	client_get_method(player, "client_play");
-    play__(move);
+    log_print(DEBUG_LOG__, "player_play: %d\n", player_id);
+
+    Client *cli = client_get(player_id);
+    cli->methods.play(move);
 }
 
 /**
@@ -123,24 +124,22 @@ void player_play(int player, struct move *move)
  * @param player - Identifiant du joueur.
  * @return int - Position du pingouin.
  */
-int player_place_penguin(int player)
+int player_place_penguin(int player_id)
 {
-    int (*place_penguin__) (void) =
-	client_get_method(player, "client_place_penguin");
-    penguin_count[player] ++;
-    return place_penguin__();
+    Client *cli = client_get(player_id);
+    penguin_count[player_id] ++;
+    return cli->methods.place_penguin();
 }
 
 /**
  * Initialiser les joueurs.
  * @param player - Identifiant du joueur.
- * @param nb_tile - Nombre de tuiles 
+ * @param nb_tile - Nombre de tuiles
  */
-void player_init_player(int player, int nb_tile)
+void player_init_player(int player_id, int nb_tile)
 {
-    void (*init__) (int) =
-	client_get_method(player, "client_init");
-    init__(nb_tile);
+    Client *cli = client_get(player_id);
+    cli->methods.init(nb_tile);
 }
 
 /**
@@ -151,12 +150,11 @@ void player_init_player(int player, int nb_tile)
  * @param dest - Destination du mouvement ou placer le
  * pingouin.
  */
-void player_send_diff(enum diff_type dt, int player,
+void player_send_diff(enum diff_type dt, int player_id,
 		      int orig, int dest)
 {
-    void (*send_diff__) (enum diff_type, int, int)
-	= client_get_method(player, "send_diff");
-    send_diff__(dt, orig, dest);
+    Client *cli = client_get(player_id);
+    cli->methods.send_diff(dt, orig, dest);
 }
 
 /**
@@ -213,7 +211,7 @@ int player_get_winner(void)
 /**
  * Obtenir le nom d'un joueur.
  * @param player - Identifiant du joueur.
- * @return const char * - Nom du joueur. 
+ * @return const char * - Nom du joueur.
  */
 const char *player_get_name(int player)
 {

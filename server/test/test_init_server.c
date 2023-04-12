@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <server/server.h>
-#include <server/path.h>
+#include "server/server.h"
+#include "server/path.h"
 
 #ifndef SERVER_INSTALL_PATH
 #error "test_init_server.c NEED const SERVER_INSTALL_PATH"
@@ -31,3 +31,4 @@ int main(int argc, char *argv[])
     path_exit();
     return EXIT_SUCCESS;
 }
+

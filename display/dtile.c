@@ -6,9 +6,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <utils/vec.h>
-#include <display/dtile.h>
-#include <d3v/object.h>
+#include <GL/glut.h>
+#include <GL/gl.h>
+
+#include "utils/vec.h"
+#include "display/dtile.h"
+#include "d3v/object.h"
+#include "d3v/d3v.h"
+
+
 
 /**
  * Représentation d'une tuile.
@@ -34,34 +40,29 @@ render_string(float x, float y, float z,
 {
 
     GLboolean b; // save lighting state and disable
-    glGetBooleanv(GL_LIGHTING, &b);
-    glDisable(GL_LIGHTING);
+    HANDLE_GL_ERROR(glGetBooleanv(GL_LIGHTING, &b));
+    HANDLE_GL_ERROR(glDisable(GL_LIGHTING));
 
     //Desactivation car non supporté pour la coloration de Bitmap
-    glDisable(GL_TEXTURE_2D);
+    HANDLE_GL_ERROR(glDisable(GL_TEXTURE_2D));
 
     //Couleur du texte
-    glColor3f(0.0, 0.0, 0.0);
-    static int load = 0;
-    static char *buf = NULL;
-    if (!load) {
-
-    }
-	
+    HANDLE_GL_ERROR(glColor3f(0.0, 0.0, 0.0));
 
     for (int i = 0; i < t; i++) {
-	//Positionnement du caractère
-	glRasterPos3f(x + espace * i, y, z);
-	glBitmap(0 ,0, 0, 0, 0, 0, NULL);
+	// Positionnement du caractère
+	HANDLE_GL_ERROR(glRasterPos3f(x + espace * i, y, z));
+	HANDLE_GL_ERROR(glBitmap(0 ,0, 0, 0, 0, 0, NULL));
 	// Dessiner le caractère
 	//glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
     }
-    glColor3f(1.0, 1.0, 1.0);
-    //Réactivation
-    glEnable(GL_TEXTURE_2D);
+    HANDLE_GL_ERROR(glColor3f(1.0, 1.0, 1.0));
+    // Réactivation
+    HANDLE_GL_ERROR(glEnable(GL_TEXTURE_2D));
 
-    if (b)
-	glEnable(GL_LIGHTING);
+    if (b) {
+	HANDLE_GL_ERROR(glEnable(GL_LIGHTING));
+    }
 }
 
 /**
@@ -88,19 +89,22 @@ struct dtile* dtile_create(struct model *m, struct texture *t,
 }
 
 /**
- * Dessiner la tuile. 
+ * Dessiner la tuile.
  * @param ti - La tuile.
  */
 void dtile_draw(struct dtile* ti)
 {
-    if (!ti)
+    if (ti == NULL) {
 	return;
+    }
+
     if (!d3v_object_is_hidden(ti->obj)) {
-	vec3 pos; //char str[15];
+	vec3 pos;
+        char str[15];
 	d3v_object_get_position(ti->obj, &pos);
-//	sprintf(str, "%d", ti->fish_count);
-//	render_string(pos.x, pos.y + 0.2,pos.z, str,
-//		      strlen(str), 0.15);
+	sprintf(str, "%d", ti->fish_count);
+	render_string(pos.x, pos.y + 0.2,pos.z, str,
+		      strlen(str), 0.15);
 	d3v_object_draw(ti->obj);
     }
 }

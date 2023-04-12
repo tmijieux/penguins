@@ -1,5 +1,5 @@
 
-set(D3V_SRC
+set(_d3v_src
   d3v.c
   scene.c
   camera.c
@@ -8,8 +8,29 @@ set(D3V_SRC
   texture.c
   model.c
   mouse_projection.c
-)
+  )
 
-add_library(d3v SHARED ${D3V_SRC})
-target_link_libraries(d3v m GL X11 GLU jpeg math)
+add_library(
+  d3v
+  SHARED
+  ${_d3v_src}
+  )
+
+target_include_directories(
+  d3v
+  PUBLIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  )
+
+
+target_link_libraries(d3v
+  penguins_utils
+  ####
+  m
+  jpeg
+  ####
+  GL
+  X11
+  GLU
+  )
 install(TARGETS d3v DESTINATION penguins/lib)

@@ -1,8 +1,3 @@
-#include <d3v.h>
-#include <d3v/d3v_internal.h>
-
-#include <d3v/scene.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,9 +5,13 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <GL/gl.h>
-#include <GL/glx.h>
 
+#include <GL/glx.h>
+#include <GL/gl.h>
+
+#include "d3v/d3v.h"
+#include "d3v/d3v_internal.h"
+#include "d3v/scene.h"
 
 #define WINDOW_TITLE "Penguin"
 #define WINDOW_POSITION_X 200
@@ -30,6 +29,13 @@ Window win __internal;
 GLXContext ctx __internal;
 Colormap cmap __internal ;
 
+int _d3v_binary_dir = 0;
+
+void d3v_init_asset_path(int v)
+{
+    _d3v_binary_dir = v;
+}
+
 typedef GLXContext(*glXCreateContextAttribsARBProc)
 (Display *, GLXFBConfig, GLXContext, Bool, const int *);
 
@@ -42,8 +48,9 @@ static int is_extension_supported(const char *ext_list, const char *extension)
 
     /* Extension names should not have spaces. */
     where = strchr(extension, ' ');
-    if (where || *extension == '\0')
+    if (where || *extension == '\0') {
 	return 0;
+    }
 
     /* It takes a bit of care to be fool-proof about parsing the
        OpenGL extensions string. Don't be fooled by sub-strings,
@@ -51,18 +58,20 @@ static int is_extension_supported(const char *ext_list, const char *extension)
     for (start = ext_list;;) {
 	where = strstr(start, extension);
 
-	if (!where)
+	if (!where) {
 	    break;
+        }
 
 	terminator = where + strlen(extension);
 
 	if (where == start || *(where - 1) == ' ')
-	    if (*terminator == ' ' || *terminator == '\0')
+        {
+	    if (*terminator == ' ' || *terminator == '\0') {
 		return 1;
-
+            }
+        }
 	start = terminator;
     }
-
     return 0;
 }
 
@@ -103,8 +112,9 @@ static int create_context(void)
     int glx_major, glx_minor;
 
     // FBConfigs were added in GLX version 1.3.
-    if (!glXQueryVersion(display, &glx_major, &glx_minor) ||
-	((glx_major == 1) && (glx_minor < 3)) || (glx_major < 1)) {
+    if (!glXQueryVersion(display, &glx_major, &glx_minor)
+        || ((glx_major == 1) && (glx_minor < 3))
+        || (glx_major < 1)) {
 	printf("Invalid GLX version");
 	return -1;
     }
@@ -153,7 +163,7 @@ static int create_context(void)
     swa.event_mask = KeyPressMask | ButtonPressMask |
 	ButtonReleaseMask | Button1MotionMask | Button3MotionMask |
 	StructureNotifyMask | ExposureMask;
-    
+
     win = XCreateWindow(display, RootWindow(display, vi->screen),
 			WINDOW_POSITION_X, WINDOW_POSITION_Y,
 			WIDTH, HEIGHT, 0, vi->depth, InputOutput, vi->visual,
@@ -200,7 +210,7 @@ static int create_context(void)
 	fprintf(stderr, "glXCreateContextAttribsARB() not found"
 		" ... using old-style GLX context\n");
 	ctx = glXCreateNewContext(display, bestFbc, GLX_RGBA_TYPE, 0, True);
-    } else { // If it does, try to get a GL 3.0 context! 
+    } else { // If it does, try to get a GL 3.0 context!
 	int context_attribs[] = {
 	    GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
 	    GLX_CONTEXT_MINOR_VERSION_ARB, 0,
@@ -218,11 +228,11 @@ static int create_context(void)
 	} else {
 	    // Couldn't create GL 3.0 context.
 	    // Fall back to old-style 2.x context.
-	    
+
 	    // When a context version below 3.0 is requested,
 	    // implementations will return the newest context version
 	    // compatible with OpenGL versions less than version 3.0.
-	    
+
 	    // GLX_CONTEXT_MAJOR_VERSION_ARB = 1
 	    context_attribs[1] = 1;
 	    // GLX_CONTEXT_MINOR_VERSION_ARB = 0
@@ -266,26 +276,25 @@ static int create_context(void)
 static void opengl_init(void)
 {
     //Initialisation de l'etat d'OpenGL
-    glXMakeCurrent(display, win, ctx);
-    glClearColor(0.6, 0.9, 0.9, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    HANDLE_GL_ERROR(glClearColor(0.6, 0.9, 0.9, 1.0));
+    HANDLE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    glColor3f(1.0, 1.0, 1.0);
+    HANDLE_GL_ERROR(glColor3f(1.0, 1.0, 1.0));
 
-    glShadeModel(GL_SMOOTH);
+    HANDLE_GL_ERROR(glShadeModel(GL_SMOOTH));
     //glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 
     // Parametrage du materiau
-    glEnable(GL_LIGHTING);
-    glEnable(GL_COLOR_MATERIAL);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_NORMALIZE);
+    HANDLE_GL_ERROR(glEnable(GL_LIGHTING));
+    HANDLE_GL_ERROR(glEnable(GL_COLOR_MATERIAL));
+    HANDLE_GL_ERROR(glEnable(GL_DEPTH_TEST));
+    HANDLE_GL_ERROR(glEnable(GL_NORMALIZE));
 
-    glColorMaterial(GL_FRONT, GL_DIFFUSE);
-    glPolygonMode(GL_FRONT, GL_FILL);
+    HANDLE_GL_ERROR(glColorMaterial(GL_FRONT, GL_DIFFUSE));
+    HANDLE_GL_ERROR(glPolygonMode(GL_FRONT, GL_FILL));
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    HANDLE_GL_ERROR(glMatrixMode(GL_MODELVIEW));
+    HANDLE_GL_ERROR(glLoadIdentity());
 }
 
 static int main_loop_quit = 0;
@@ -305,7 +314,7 @@ void d3v_post_redisplay(void)
 static int d3v_main_loop(void)
 {
     XEvent xev;
-    
+
     while (!main_loop_quit) {
 	if (XPending(display) || !need_redraw) {
 	    XNextEvent(display, &xev);
@@ -320,11 +329,11 @@ static int d3v_main_loop(void)
 		d3v_button(xev.xbutton.button, xev.type,
 			   xev.xbutton.x, xev.xbutton.y);
 		break;
-	    
+
 	    case MotionNotify:
 		d3v_mouse_motion(xev.xmotion.x, xev.xmotion.y);
 		break;
-	    
+
 	    case ConfigureNotify:
 		d3v_reshape(xev.xconfigure.width,
 			    xev.xconfigure.height);
@@ -333,7 +342,7 @@ static int d3v_main_loop(void)
 	    case DestroyNotify:
 		main_loop_quit = 1;
 		break;
-	    
+
 	    default:
 		break;
 	    };
@@ -353,11 +362,47 @@ static int d3v_main_loop(void)
     return 0;
 }
 
+
+static void GLAPIENTRY
+MessageCallback( GLenum source,
+                 GLenum type,
+                 GLuint id,
+                 GLenum severity,
+                 GLsizei length,
+                 const GLchar* message,
+                 const void* userParam )
+{
+    fprintf(
+        stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+        (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+        type, severity, message
+    );
+}
+
+static void opengl_init_error(void)
+{
+    HANDLE_GL_ERROR(glEnable(GL_DEBUG_OUTPUT));
+    HANDLE_GL_ERROR(glDebugMessageCallback( MessageCallback, 0));
+}
+
+static void opengl_displayinfo(void)
+{
+    printf("GL_VERSION  = %s\n", glGetString(GL_VERSION));
+    printf("GL_RENDERER = %s\n", glGetString(GL_RENDERER));
+    printf("GL_VENDOR   = %s\n", glGetString(GL_VENDOR));
+}
+
+
 // PUBLIC
 
 int d3v_init(int object_count_clue)
 {
     create_context();
+
+    glXMakeCurrent(display, win, ctx);
+
+    opengl_displayinfo();
+    opengl_init_error();
     opengl_init();
     d3v_scene_init(object_count_clue);
     return 0;
@@ -365,7 +410,6 @@ int d3v_init(int object_count_clue)
 
 int d3v_start(vec3 *pos)
 {
-    glXMakeCurrent(display, win, ctx);
     d3v_scene_start(pos);
     d3v_main_loop();
     return 0;
@@ -374,7 +418,7 @@ int d3v_start(vec3 *pos)
 int d3v_exit(void)
 {
     d3v_scene_exit();
-    
+
     XDestroyWindow(display, win);
     XFreeColormap(display, cmap);
     XCloseDisplay(display);

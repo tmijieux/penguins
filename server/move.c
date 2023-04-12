@@ -6,14 +6,18 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include <server/move.h>
-#include <server/tile.h>
-#include <server/server.h>
-#include <server/map.h>
-#include <utils/log.h>
-#include <utils/graph.h>
 
-/* 
+#include "game_interface.h"
+#include "server/move_impl.h"
+#include "server/tile.h"
+#include "server/server.h"
+#include "server/map.h"
+#include "utils/log.h"
+#include "utils/graph.h"
+
+
+
+/*
  *   BEGIN ( INTERFACE )
  *     --> (dont touch the names)
  *     --> (dont touch the headers)
@@ -56,7 +60,7 @@ int move__get_nb_jump(struct move *move)
  * @param direction - Direction du mouvement.
  * @param nb_move - Nombre de sauts du mouvement.
  */
-void move_set(struct move *move, int tile_id_orig,
+void move__set(struct move *move, int tile_id_orig,
 	      int direction, int nb_move)
 {
     move->orig = tile_id_orig;
@@ -64,7 +68,7 @@ void move_set(struct move *move, int tile_id_orig,
     move->jump_count = nb_move;
 }
 
-/* 
+/*
  *   END ( INTERFACE )
  *     --> (I hope you did not touch the names! (better for you you didn't))
  *     --> (If you touched the headers: your head's off !)

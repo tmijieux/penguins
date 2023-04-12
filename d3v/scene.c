@@ -42,11 +42,11 @@ struct scene scene __internal;
  * @param y - Position y de la sourie.
  */
 __internal
-void d3v_key(unsigned char key, int x, int y) 
+void d3v_key(unsigned char key, int x, int y)
 {
     if (scene.key_input_callback)
 	scene.key_input_callback(key, x, y);
-    
+
     switch (key) {
     case 27: // 'r'
 	d3v_camera_set_look(scene.cam, &scene.first_look);
@@ -151,13 +151,14 @@ void d3v_reshape(int w, int h)
 static void draw_basis(void)
 {
     GLboolean b; // save lighting state and disable
-    glGetBooleanv(GL_LIGHTING, &b);
-    glDisable(GL_LIGHTING);
 
-    glColor3f(1.0, 1.0, 1.0);
-        
-    glNormal3f(0, 1, 0);
+    HANDLE_GL_ERROR(glGetBooleanv(GL_LIGHTING, &b));
+    HANDLE_GL_ERROR(glDisable(GL_LIGHTING));
+    HANDLE_GL_ERROR(glColor3f(1.0, 1.0, 1.0));
+    HANDLE_GL_ERROR(glNormal3f(0, 1, 0));
+
     glBegin(GL_LINES);
+
     glColor3f(1., 0., 0.);    // x red
     glVertex3f(0., 0., 0.);
     glVertex3f(1., 0., 0.);
@@ -169,40 +170,46 @@ static void draw_basis(void)
     glColor3f(0., 0., 1.);    // z blue
     glVertex3f(0., 0., 0.);
     glVertex3f(0., 0., 1.);
-    glEnd();
-    glColor3f(1.0, 1.0, 1.0); // Reset Color
 
-    if (b) // restore lighting state
-	glEnable(GL_LIGHTING);
+    HANDLE_GL_ERROR(glEnd());
+
+    HANDLE_GL_ERROR(glColor3f(1.0, 1.0, 1.0)); // Reset Color
+
+    if (b) { // restore lighting state
+	HANDLE_GL_ERROR(glEnable(GL_LIGHTING));
+    }
 }
 
 /**
  * Affiche la scène.
- * Mise à jour de la lumière. 
+ * Mise à jour de la lumière.
  * Dessin des liens, des tuiles et des penguins.
  */
 __internal
 void d3v_scene_draw(void)
 {
+
     glXMakeCurrent(display, win, ctx);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
+
     glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    
+    HANDLE_GL_ERROR(glLoadIdentity());
+
     d3v_camera_update(scene.cam);
     d3v_light_update(scene.light);
-    
+
     if (scene.draw_callback)
 	scene.draw_callback();
-	
+
     draw_basis(); // TODO: option to disable this
-    
+
     for (int i = 0; i < scene.object_count; i++)
+    {
 	d3v_object_draw(scene.object_buf[i]);
+    }
 
     // add wire and (raster) string HERE !
-    
+
 //    printf("draw\n");
     glXSwapBuffers(display, win);
 }
