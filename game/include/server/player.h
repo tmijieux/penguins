@@ -15,6 +15,7 @@ void player_score_add(int player_id, int fish);
 void player_score_reset(int player_id);
 
 int player_get_winner(void);
+void player_display_board(void);
 const char *player_get_name(int player);
 
 int player_can_play(int player_id);

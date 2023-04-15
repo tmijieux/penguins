@@ -56,9 +56,20 @@ int main(int argc, char *argv[])
     server_run();
 
     int winner = server_get_winner();
-    log_print(PRINT_LOG__, "player %d also known as %s "
-	      "won with a score of %d!\n", winner, player_get_name(winner),
+    puts("");
+    puts("---");
+    puts("");
+    puts("WINNER:");
+    printf("player %d also known as `%s` "
+	      "won with an amazing score of %d!\n", winner, player_get_name(winner),
 	      player_get_player_score(winner));
+    puts("");
+    puts("---");
+    puts("");
+    player_display_board();
+    puts("");
+    puts("---");
+    puts("");
 
     server_exit();
     log_exit();

@@ -2,7 +2,9 @@
  * @file player.c
  */
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <server/client.h>
 #include <server/player.h>
@@ -18,8 +20,9 @@ static int *penguin_count = NULL;
  */
 static void player_init_score(void)
 {
-    for (int i = 0; i < player_count; i++)
+    for (int i = 0; i < player_count; i++) {
 	score[i] = 0;
+    }
 }
 
 /**
@@ -29,16 +32,20 @@ void player_module_init(void)
 {
     client_module_init();
     player_count = client_get_client_count();
-    if (score == NULL)
+    if (score == NULL) {
 	score = calloc(player_count, sizeof(*score));
-    else
+    } else {
 	player_init_score();
-    if (penguin_count == NULL)
+    }
+    if (penguin_count == NULL) {
 	penguin_count = calloc(player_count, sizeof(*penguin_count));
-    if(state == NULL)
+    }
+    if (state == NULL) {
 	state = malloc(player_count * sizeof(*state));
-    for (int i = 0; i < player_count; i++)
+    }
+    for (int i = 0; i < player_count; i++) {
 	state[i] = 1;
+    }
 }
 
 /**
@@ -207,6 +214,34 @@ int player_get_winner(void)
     }
     return winner;
 }
+
+
+int cmp(const void* A, const void* B) {
+    const int *a = A;
+    const int *b = B;
+    return *a < *b;
+}
+
+void player_display_board(void)
+{
+    int *sorted_score = calloc(player_count, sizeof(int));
+    memcpy(sorted_score, score, player_count*sizeof(int));
+
+    qsort(sorted_score, player_count, sizeof(int), cmp);
+
+    for (int i = 0; i < player_count; i++)
+    {
+        for (int p = 0; p < player_count; ++p)
+        {
+            if (score[p] == sorted_score[i])
+            {
+                printf("%d points - Player %d - %s\n", score[p], p, player_get_name(p));
+                break;
+            }
+        }
+    }
+}
+
 
 /**
  * Obtenir le nom d'un joueur.
