@@ -5,16 +5,17 @@
 #define LIST_FREE_MALLOCD_ELEMENT__   (0x00000001)
 
 struct list;
+typedef struct list list_t;
 
-struct list *list_create(int flags);
-void list_destroy(struct list*);
+list_t *list_create(int flags);
+void list_destroy(list_t*);
 
-void *list_get_element(struct list*, unsigned int);
-void list_add_element(struct list *, void*);
+void *list_get_element(list_t*, unsigned int);
+void list_add_element(list_t *, void*);
 
-void list_insert_element(struct list*, unsigned int, void*);
-void list_remove_element(struct list*, unsigned int);
+void list_insert_element(list_t*, unsigned int, void*);
+void list_remove_element(list_t*, unsigned int);
 
-size_t list_size(struct list*);
+size_t list_size(list_t*);
 
 #endif // PENGUINS_LIST_H

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
-#include <utils/list.h>
-#include <utils/list_node.h>
+#include "utils/list.h"
+#include "utils/list_node.h"
 
 /**
  * @file list.c
@@ -22,9 +22,9 @@ struct list {
  * Obtenir le n-ième noeud de la liste.
  * @param list - Liste à parcourir.
  * @param n - Position du noeud.
- * @return static struct node * - Le n-ième noeud. 
+ * @return static struct node * - Le n-ième noeud.
  */
-static struct node *list_get_node(struct list *list, unsigned int n)
+static struct node *list_get_node(list_t *list, unsigned int n)
 {
     int k = n;
     struct node *node = list->front_sentinel;
@@ -44,7 +44,7 @@ static struct node *list_get_node(struct list *list, unsigned int n)
  * @param list - La liste.
  * @return size_t - Taille de la liste.
  */
-size_t list_size(struct list *list)
+size_t list_size(list_t *list)
 {
     return list->size;
 }
@@ -54,11 +54,11 @@ size_t list_size(struct list *list)
  * @param flags - Option de la liste.
  * 0 -> default.
  * 1 -> Libérer les éléments alloués.
- * @return struct list * - La liste créée.
+ * @return list_t * - La liste créée.
  */
-struct list *list_create(int flags)
+list_t *list_create(int flags)
 {
-    struct list *list = malloc(sizeof(*list));
+    list_t *list = malloc(sizeof(*list));
     list->front_sentinel = node_create(NULL, NODE_SENTINEL);
     node_set_next(list->front_sentinel, node_create(NULL, NODE_SENTINEL));
     list->flags = flags;
@@ -72,7 +72,7 @@ struct list *list_create(int flags)
  * Libérer la mémoire occupée par une liste.
  * @param list - Liste à supprimer.
  */
-void list_destroy(struct list *list)
+void list_destroy(list_t *list)
 {
     while (list_size(list) > 0)
 	list_remove_element(list, 1);
@@ -82,12 +82,12 @@ void list_destroy(struct list *list)
 }
 
 /**
- * Obtenir l'élément à la n-ième position. 
+ * Obtenir l'élément à la n-ième position.
  * @param list - La liste à parcourir.
  * @param n - Position de l'élément.
- * @return void * - L'élément. 
+ * @return void * - L'élément.
  */
-void *list_get_element(struct list *list, unsigned int n)
+void *list_get_element(list_t *list, unsigned int n)
 {
     return node_get_data(list_get_node(list, n));
 }
@@ -97,7 +97,7 @@ void *list_get_element(struct list *list, unsigned int n)
  * @param list - La liste à modifier.
  * @param element - L'élément à ajouter.
  */
-void list_add_element(struct list *list, void *element)
+void list_add_element(list_t *list, void *element)
 {
     struct node *tmp = node_create(element, NODE_DATA);
     node_set_next(tmp, node_get_next(list->front_sentinel));
@@ -111,7 +111,7 @@ void list_add_element(struct list *list, void *element)
  * @param n - Position de l'élément à insérer.
  * @param element - L'élément à insérer.
  */
-void list_insert_element(struct list *list, unsigned int n, void *element)
+void list_insert_element(list_t *list, unsigned int n, void *element)
 {
     struct node *previous = list_get_node(list, n-1);
     struct node *tmp = node_create(element, NODE_DATA);
@@ -125,7 +125,7 @@ void list_insert_element(struct list *list, unsigned int n, void *element)
  * @param list - La liste à modifier.
  * @param n - Position de l'élément à supprimer.
  */
-void list_remove_element(struct list *list, unsigned int n)
+void list_remove_element(list_t *list, unsigned int n)
 {
     struct node *previous = list_get_node(list, n-1);
     struct node *tmp = node_get_next(previous);

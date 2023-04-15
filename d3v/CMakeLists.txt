@@ -7,6 +7,7 @@ set(_d3v_src
   object.c
   texture.c
   model.c
+  shader.c
   mouse_projection.c
   )
 
@@ -29,8 +30,9 @@ target_link_libraries(d3v
   m
   jpeg
   ####
-  GL
-  X11
-  GLU
+  GL # OpenGL core
+  GLU # GL utility
+  # X11 (X11 window management)
+  glfw # GL FrameWork (portable cross-platform window management) (alternative to GLUT)
   )
 install(TARGETS d3v DESTINATION penguins/lib)

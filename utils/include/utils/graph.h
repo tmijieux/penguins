@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+#include "utils/vec.h"
+
 #define GRAPH_MATRIX 0
 #define GRAPH_LIST   1
 
@@ -11,39 +13,61 @@
 
 struct graph;
 struct successor_iterator;
+typedef struct graph graph_t;
+typedef struct successor_iterator successor_iter_t;
+
+struct vert_data {
+    int nb_fish;
+    int player_id; // -1 for empty
+
+    // display info
+    int model_id; // -1 for uninitialized
+    int texture_id; // -1 for uninitialized
+    vec3 loc;
+    float angle;
+    float scale;
+};
+typedef struct vert_data vdata_t;
 
 /* graph general */
-struct graph* graph_create(int vertices_count,
+graph_t* graph_create(int vertices_count,
 			   int is_oriented, // ORIENTED || NOT_ORIENTED
 			   int implementation); // GRAPH_LIST || GRAPH_MATRIX
-struct graph *graph_copy(const struct graph*);
-void graph_destroy(struct graph*);
-int graph_is_oriented(const struct graph*);
-size_t graph_size(const struct graph*);
-void graph_add_edge(struct graph*, int v_src, int v_dest);
-void graph_remove_edge(struct graph*, int v_src, int v_dest);
-int graph_has_edge(const struct graph*, int v_src, int v_dest);
-int graph_edge_count(const struct graph*, int vertex);
-void graph_transpose(struct graph*);
+graph_t *graph_copy(const graph_t*);
+void graph_destroy(graph_t*);
+int graph_is_oriented(const graph_t*);
+size_t graph_size(const graph_t*);
+void graph_add_edge(graph_t*, int v_src, int v_dest);
+void graph_remove_edge(graph_t*, int v_src, int v_dest);
+int graph_has_edge(const graph_t*, int v_src, int v_dest);
+int graph_edge_count(const graph_t*, int vertex);
+void graph_transpose(graph_t*);
 
 /* successor iterator */
-struct successor_iterator
-*graph_get_successor_iterator(struct graph *g, int vertex);
-void iterator_begin(struct successor_iterator *sc);
-void iterator_next(struct successor_iterator *sc);
-int iterator_end(struct successor_iterator *sc);
-int iterator_value(struct successor_iterator *sc);
-void successor_iterator_free(struct successor_iterator *sc);
+successor_iter_t*
+graph_get_successor_iterator(graph_t *g, int vertex);
+void iterator_begin(successor_iter_t *sc);
+void iterator_next(successor_iter_t *sc);
+int iterator_end(successor_iter_t *sc);
+int iterator_value(successor_iter_t *sc);
+void successor_iterator_free(successor_iter_t *sc);
 
 /*  Vertex properties:  */
-void graph_set_fish(struct graph *g, int vertex, int fish);
-int graph_get_fish(struct graph *g, int vertex);
+void graph_set_data(graph_t *g, int vertex, const vdata_t *data);
+void graph_get_data(graph_t *g, int vertex, vdata_t *data);
 
-void graph_set_player(struct graph *g, int vertex, int player);
-int graph_get_player(struct graph *g, int vertex);
 
-void graph_set_neighbours(struct graph *g, int vertex, int *neighbours);
-int *graph_get_neighbours(struct graph *g, int vertex);
+void graph_set_nb_fish(graph_t *g, int vertex, int);
+int graph_get_nb_fish(graph_t *g, int vertex);
+
+
+void graph_set_player_id(graph_t *g, int vertex, int);
+int graph_get_player_id(graph_t *g, int vertex);
+
+
+
+void graph_set_neighbours(graph_t *g, int vertex, int *neighbours);
+int *graph_get_neighbours(graph_t *g, int vertex);
 
 
 /*

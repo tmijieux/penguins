@@ -1,7 +1,7 @@
 
 include_directories(
   ../include
-  ../server/include
+  ../game/include
   )
 
 ### maps:
@@ -16,11 +16,11 @@ add_library(map_penrose
   penrose/penrose.h
   )
 
-target_link_libraries(map_square penguins_utils penguins_display)
-target_link_libraries(map_hexagon penguins_utils penguins_display)
-target_link_libraries(map_triangle penguins_utils penguins_display)
-target_link_libraries(map_octogon penguins_utils penguins_display)
-target_link_libraries(map_penrose penguins_utils penguins_display)
+target_link_libraries(map_square penguins_utils)
+target_link_libraries(map_hexagon penguins_utils)
+target_link_libraries(map_triangle penguins_utils)
+target_link_libraries(map_octogon penguins_utils)
+target_link_libraries(map_penrose penguins_utils)
 
 
 

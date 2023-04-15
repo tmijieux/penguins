@@ -7,9 +7,9 @@
 #include <math.h>
 #include <string.h>
 
-#include <utils/fibonacci.h>
+#include "utils/fibonacci.h"
 
-#include "penrose.h"
+#include "./penrose.h"
 
 #define LAYER 4
 #define PHI 1.6180339887
@@ -22,14 +22,14 @@
 /**
  * Description d'un point.
  */
-struct point{
+struct point {
     float x, y, z;
 };
 
 /**
  * Description d'un triangle.
- */ 
-struct triangle{
+ */
+struct triangle {
     int a, b, c;
     int angle;
 };
@@ -37,7 +37,7 @@ struct triangle{
 /**
  * Description d'un losange.
  */
-struct lozenge{
+struct lozenge {
     int point[4];   // ID de point dans le buffer de point
     int type;       // 0 = obtuse, 1 = acute
     int direction[4]; // ID de losange dans la direction donnée en indice
@@ -50,7 +50,7 @@ struct lozenge{
  */
 static struct {
     int step;
-    int surface;    
+    int surface;
 
     struct point *point_buffer;
     int point_buffer_size;
@@ -73,7 +73,7 @@ static inline int min(int a, int b)
 }
 
 /**
- * Calcule le nombre de récursions nécessaires à l'algorithme de génération de 
+ * Calcule le nombre de récursions nécessaires à l'algorithme de génération de
  * penrose, le nombre maximal de losanges que peut contenir cette surface
  * et les stocke dans la structure penrose.
  * @param nb_lozenge - Nombre de losange.
@@ -85,7 +85,7 @@ static void penrose_set_step_surface(int nb_lozenge, int dimension)
     int i = 0;
     int surface;
     int max_surface = ceil(nb_lozenge / pow(LAYER, dimension - 2.));
-    
+
     do {
 	i++;
 	surface = (fibonacci_get(f, 2 * i + 1) - fibonacci_get(f, i + 2)) / 2;
@@ -104,9 +104,9 @@ static void penrose_set_step_surface(int nb_lozenge, int dimension)
  * @return int - Position du point ajouté dans le buffer de point.
  */
 static int penrose_add_point(float x, float y, float z)
-{    
+{
     for (int i = 0; i < p.nb_point; i++) {
-	if (fabsf(x - p.point_buffer[i].x) < EPSILON && 
+	if (fabsf(x - p.point_buffer[i].x) < EPSILON &&
 	    fabsf(y - p.point_buffer[i].y) < EPSILON &&
 	    fabsf(z - p.point_buffer[i].z) < EPSILON)
 	    return i;
@@ -114,7 +114,7 @@ static int penrose_add_point(float x, float y, float z)
 
     if(p.nb_point >= p.point_buffer_size){
 	p.point_buffer_size *= 2;
-	p.point_buffer = realloc(p.point_buffer, 
+	p.point_buffer = realloc(p.point_buffer,
 				  p.point_buffer_size * sizeof(struct point));
     }
     struct point O = { x, y, z };
@@ -133,7 +133,7 @@ static int penrose_add_aligned_point(int a, int b)
 {
     struct point A = p.point_buffer[a];
     struct point B = p.point_buffer[b];
-	
+
     return penrose_add_point(A.x + (B.x - A.x) / PHI,
 			     A.y + (B.y - A.y) / PHI, A.z);
 }
@@ -159,7 +159,7 @@ static int penrose_has_common_edge(struct lozenge *a, struct lozenge *b)
     int match = 0;
     for (int i = 0; i < 4 && match < 2; i++)
 	for (int j = 0; j < 4 && match < 2; j++)
-	    if (a->point[i] == b->point[j]) 
+	    if (a->point[i] == b->point[j])
 		match++;
     return match == 2;
 }
@@ -174,7 +174,7 @@ static int penrose_has_common_point(struct lozenge *a, struct lozenge *b)
 {
     for (int i = 0; i < 4; i++)
 	for (int j = 0; j < 4; j++)
-	    if (a->point[i] == b->point[j]) 
+	    if (a->point[i] == b->point[j])
 	        return 1;
     return 0;
 }
@@ -197,11 +197,11 @@ static int penrose_add_lozenge(int a, int b, int c, int d, int type, int angle)
     m->point[1] = b;
     m->point[2] = c;
     m->point[3] = d;
-    
+
     m->nb_direction = 0;
     m->type = type;
     m->angle = angle;
-    
+
     for (int i = 0; i < p.nb_lozenge; i++) {
 	struct lozenge *n = &p.lozenge_buffer[i];
 	if (penrose_has_common_edge(m, n)) {
@@ -230,11 +230,11 @@ static int penrose_add_triangle(int a, int b, int c, int type,
 {
     if(p.nb_triangle >= p.triangle_buffer_size){
 	p.triangle_buffer_size *= 2;
-	p.triangle_buffer = realloc(p.triangle_buffer, 
-				     p.triangle_buffer_size * 
+	p.triangle_buffer = realloc(p.triangle_buffer,
+				     p.triangle_buffer_size *
 				     sizeof(struct triangle));
     }
-    
+
     for (int i = 0; i < p.nb_triangle; i++) {
 	if (b == p.triangle_buffer[i].b && c == p.triangle_buffer[i].c) {
 	    if(p.triangle_buffer[i].angle  % 180 != angle % 180)
@@ -268,7 +268,7 @@ static int penrose_add_triangle(int a, int b, int c, int type,
  * @param step - Nombre d'étapes.
  * @param nb_lozenge - Nombre de losanges. (modifié)
  */
-static void penrose_compute_penrose(int a, int b, int c, int type, int angle, 
+static void penrose_compute_penrose(int a, int b, int c, int type, int angle,
 	     int step, int *nb_lozenge)
 {
     if (*nb_lozenge > 0) {
@@ -280,7 +280,7 @@ static void penrose_compute_penrose(int a, int b, int c, int type, int angle,
 	    case 0:
 		d = penrose_add_aligned_point(c, a);
 		e = penrose_add_aligned_point(c, b);
-		
+
 		penrose_compute_penrose(d, c, e, 2, (angle + 5 * ANGLE) % 360,
 					step - 1, nb_lozenge);
 		penrose_compute_penrose(e, a, b, 0, (angle + 6 * ANGLE) % 360,
@@ -299,7 +299,7 @@ static void penrose_compute_penrose(int a, int b, int c, int type, int angle,
 	    case 2:
 		d = penrose_add_aligned_point(c, a);
 		e = penrose_add_aligned_point(c, b);
-	    
+
 		penrose_compute_penrose(d, c, e, 0, (angle + 5 * ANGLE) % 360,
 					step - 1, nb_lozenge);
 		penrose_compute_penrose(e, a, b, 2, (angle + 4 * ANGLE) % 360,
@@ -336,7 +336,7 @@ void penrose_init(int nb_lozenge, int dimension)
     p.nb_triangle = 0;
     p.nb_lozenge = 0;
 
-    penrose_set_step_surface(nb_lozenge, dimension);  
+    penrose_set_step_surface(nb_lozenge, dimension);
     int step = p.step;
     int surface = p.surface;
     float scale = pow(PHI, step) / SQRT_5;
@@ -347,11 +347,11 @@ void penrose_init(int nb_lozenge, int dimension)
 	int a = penrose_add_point(scale * 0.5, scale * ORD, z);
 	int b = penrose_add_point(0., 0., z);
 	int c = penrose_add_point(scale, 0., z);
-    
+
 	penrose_compute_penrose(a, b, c, 1, 0, step, &nb_lozenge_per_surface);
 	nb_lozenge -= surface;
 	z += 1.;
-    }    
+    }
 }
 
 /**
@@ -383,7 +383,7 @@ int penrose_get_angle(int id)
 	printf("penrose_get_angle: Error, invalid id\n");
 	exit(EXIT_FAILURE);
     }
-   
+
     return p.lozenge_buffer[id].angle;
 }
 
@@ -408,8 +408,8 @@ int penrose_get_neighbor(int id, int direction)
 /**
  * Obtenir l'identifiant de destination.
  * @param id - Identifiant du losange de départ.
- * @param direction - Direction du mouvement. Le mappeur peut se permettre 
- * de changer sa valeur pour indiquer au serveur quelle est la prochaine 
+ * @param direction - Direction du mouvement. Le mappeur peut se permettre
+ * de changer sa valeur pour indiquer au serveur quelle est la prochaine
  * direction à prendre pour avoir  un déplacement en ligne droite.
  * @return int - Identifiant de destination, -1 si pas de destination.
  */

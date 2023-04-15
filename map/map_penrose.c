@@ -7,12 +7,9 @@
 #include <math.h>
 
 #include "server/map.h"
-
 #include "display/display.h"
-#include "d3v/texture.h"
-#include "d3v/model.h"
 
-#include "penrose/penrose.h"
+#include "./penrose/penrose.h"
 
 /**
  * Initialisation du graphe.
@@ -32,30 +29,19 @@ static void init_graph(int dimension, int nb_tile, struct graph *graph)
     int layer = penrose_get_layer();
     #ifdef USE_GL_DISPLAY__
     float coord[3];
-    struct texture *t = NULL;
-    struct model *acute = NULL;
-    struct model *obtuse = NULL;
+    int tex = -1;
+    int acute_model = -1;
+    int obtuse_model = -1;
     if (dimension <= 3) {
-        t = texture_load("textures/glace.jpg");
-        acute = model_load_wavefront("models/wavefront/acute_tile.obj");
-	obtuse = model_load_wavefront("models/wavefront/obtuse_tile.obj");
-	display_register_texture(t);
-	display_register_model(acute);
-	display_register_model(obtuse);
+        tex = display_register_texture("textures/glace.jpg");
+        acute_model = display_register_model("models/wavefront/acute_tile.obj");
+	obtuse_model = display_register_model("models/wavefront/obtuse_tile.obj");
     }
     #endif
     for (int i = 0; i < nb_tile; i++) {
         int dim = surface;
 	int neighbor;
 	int j = 0;
-        #ifdef USE_GL_DISPLAY__
-	penrose_get_coordinates_from_id(i, coord);
-	float angle = penrose_get_angle(i);
-	int type = penrose_get_type(i);
-	int fish = graph_get_fish(graph, i);
-	display_add_tile(i, type ? acute : obtuse, t,
-			 coord[1], coord[2], coord[0], angle, 0.4, fish);
-	#endif
         do {
             neighbor = penrose_get_neighbor(i, j);
 	    if (neighbor != -1 && !graph_has_edge(graph, i, neighbor))
@@ -68,6 +54,21 @@ static void init_graph(int dimension, int nb_tile, struct graph *graph)
 		graph_add_edge(graph, i, i + dim);
 	    dim *= layer;
 	}
+
+
+	penrose_get_coordinates_from_id(i, coord);
+	float angle = penrose_get_angle(i);
+	int type = penrose_get_type(i);
+        int model = type != 0 ? acute_model : obtuse_model;
+
+        vdata_t data;
+	graph_get_data(graph, i, &data);
+        data.model_id = model;
+        data.texture_id = tex;
+        data.angle = angle;
+        data.scale = 0.4;
+        data.loc = (vec3){coord[1], coord[2], coord[0]};
+        graph_set_data(graph, i, &data);
     }
 }
 
@@ -115,11 +116,16 @@ static int get_id_from_move(int origin, int *direction, int dimension,
     return dest;
 }
 
+static void my_free(void)
+{
+    penrose_free();
+}
+
 static struct map_methods methods = {
     .init_graph = &init_graph,
     .get_number_directions = &get_number_directions,
     .get_id_from_move = &get_id_from_move,
-    .exit = &penrose_free,
+    .exit = &my_free,
 };
 
 void map_register(struct map_methods* m)

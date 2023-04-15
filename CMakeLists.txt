@@ -25,11 +25,11 @@ enable_testing()
 
 add_subdirectory(utils)
 
-add_subdirectory(d3v)
-add_subdirectory(display)
-add_subdirectory(server)
 add_subdirectory(map)
 add_subdirectory(clients)
+add_subdirectory(d3v)
+add_subdirectory(game)
+
 add_subdirectory(assets)
 
 # stackoverflow.com/questions/8934295/

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <stddef.h>
 
@@ -14,6 +15,7 @@
 #include "utils/vec.h"
 #include "d3v/model.h"
 #include "d3v/d3v.h"
+#include "d3v/d3v_internal.h"
 
 #define LINE_SIZE 128
 
@@ -32,10 +34,9 @@ struct vertex {
  * Description du model.
  */
 struct model {
-    struct vertex *buffer;
-    unsigned int vcount;
-    int uv, normal; // booleans
-    GLuint vbo;
+    uint32_t nb_vertices;
+    GLenum primitive;
+    GLuint vao, vbo;
 };
 
 /**
@@ -120,40 +121,40 @@ struct model *model_load_wavefront(const char *path)
         exit(EXIT_FAILURE);
     }
     int have_uv = 0, have_normal = 0;
-    int vertex_count = 0, normal_count = 0, tex_coord_count = 0;
+    int nb_vertices = 0, nb_normal = 0, nb_texcoord = 0;
     int face_count = 0;
-    int b = model_scan_wavefront(f, &vertex_count, &normal_count,
-                                 &tex_coord_count, &face_count,
+    int b = model_scan_wavefront(f, &nb_vertices, &nb_normal,
+                                 &nb_texcoord, &face_count,
                                  &have_uv, &have_normal);
     if (!b) {
 	fprintf(stderr, "%s model load failed.", path);
 	return NULL;
     }
     rewind(f);
-    vec3 *vertex = malloc(sizeof(*vertex) * vertex_count);
-    vec3 *normal = malloc(sizeof(*normal) * normal_count);
-    vec2 *tex_coord = malloc(sizeof(*tex_coord) * tex_coord_count);
+    vec3 *vertex = malloc(sizeof(*vertex) * nb_vertices);
+    vec3 *normal = malloc(sizeof(*normal) * nb_normal);
+    vec2 *tex_coord = malloc(sizeof(*tex_coord) * nb_texcoord);
 
     int *vertex_index = malloc(sizeof(*vertex_index) * face_count * 3);
     int *normal_index = malloc(sizeof(*normal_index) * face_count * 3);
     int *tex_coord_index = malloc(sizeof(*tex_coord_index) * face_count * 3);
 
-    normal_count = tex_coord_count = vertex_count = face_count = 0;
+    nb_normal = nb_texcoord = nb_vertices = face_count = 0;
     char line[LINE_SIZE];
     while (fgets(line, LINE_SIZE, f) != NULL) {
 	char *line_header = strndup(line, 2);
 	if (strcmp(line_header, "v ") == 0) {
-	    struct vec3 *p = &vertex[vertex_count++];
-	    sscanf(&line[2], "%lf %lf %lf\n", &p->x, &p->y, &p->z);
+	    struct vec3 *p = &vertex[nb_vertices++];
+	    sscanf(&line[2], "%f %f %f\n", &p->x, &p->y, &p->z);
 	} else if (strcmp(line_header, "vt") == 0) {
-	    struct vec2 *t = &tex_coord[tex_coord_count++];
-	    sscanf(&line[2], "%lf %lf\n", &t->x, &t->y);
+	    struct vec2 *t = &tex_coord[nb_texcoord++];
+	    sscanf(&line[2], "%f %f\n", &t->x, &t->y);
 	    t->y = 1 - t->y;
 	    // --> In BLENDER UV coord start up right
 	    // OpenGl is Down right
 	} else if (strcmp(line_header, "vn") == 0) {
-	    struct vec3 *n = &normal[normal_count++];
-	    sscanf(&line[2], "%lf %lf %lf\n", &n->x, &n->y, &n->z);
+	    struct vec3 *n = &normal[nb_normal++];
+	    sscanf(&line[2], "%f %f %f\n", &n->x, &n->y, &n->z);
 	} else if (strcmp(line_header, "f ") == 0) {
 	    int k = 3*face_count++;
 	    if (have_uv && have_normal) {
@@ -179,32 +180,96 @@ struct model *model_load_wavefront(const char *path)
 	free(line_header);
     }
     fclose(f);
-    struct model *m = malloc(sizeof(*m));
-    m->buffer = malloc(sizeof(*m->buffer) * 3*face_count);
 
-    for (int i = 0; i < 3*face_count; i++) {
-	m->buffer[i].pos = vertex[vertex_index[i]-1];
-	if (have_normal)
-	    m->buffer[i].normal = normal[normal_index[i]-1];
-	if (have_uv)
-	    m->buffer[i].tex_coord = tex_coord[tex_coord_index[i]-1];
+    nb_vertices = face_count * 3;
+    size_t buffer_size = sizeof(struct vertex) * nb_vertices;
+    struct vertex *buffer = malloc(buffer_size);
+    for (int i = 0; i < nb_vertices; i++)
+    {
+	buffer[i].pos = vertex[vertex_index[i]-1];
+	if (have_normal) {
+	    buffer[i].normal = normal[normal_index[i]-1];
+        }
+	if (have_uv) {
+	    buffer[i].tex_coord = tex_coord[tex_coord_index[i]-1];
+        }
     }
-    m->uv = have_uv; m->normal = have_normal;
-    free(vertex); free(vertex_index);
-    free(normal); free(normal_index);
-    free(tex_coord); free(tex_coord_index);
-    m->vcount = 3*face_count;
+
+    free(vertex);
+    free(vertex_index);
+    free(normal);
+    free(normal_index);
+    free(tex_coord);
+    free(tex_coord_index);
 
     // OpenGL
-    HANDLE_GL_ERROR(glGenBuffers(1, &m->vbo));
-    HANDLE_GL_ERROR(glBindBuffer(GL_ARRAY_BUFFER, m->vbo));
-    HANDLE_GL_ERROR(
-        glBufferData(GL_ARRAY_BUFFER,
-                     m->vcount*sizeof(*m->buffer), m->buffer,
-                     GL_STATIC_DRAW)
+    model_t *model = create_model_from_data(
+        buffer, nb_vertices, buffer_size, GL_TRIANGLES,
+        have_uv, 0, have_normal,
+        offsetof(struct vertex, tex_coord), 0, offsetof(struct vertex, normal),
+        sizeof(struct vertex)
     );
-    return m;
+    free(buffer);
+    return model;
 }
+
+
+/**
+ * Charger le wavefront.
+ * @param path - Chemin d'accès au fichier.
+ * @return struct model * - Le modèle.
+ */
+model_t *create_model_from_data(
+    void *data, uint32_t nb_vertices, size_t buffer_size, int gl_primitive,
+    int have_uv, int have_color, int have_normals,
+    size_t uv_offset, size_t color_offset, size_t normals_offset, int stride)
+{
+    model_t *model = calloc(1, sizeof(*model));
+    model->primitive = gl_primitive;
+    model->nb_vertices = nb_vertices;
+
+    model->vao = 0;
+    HANDLE_GL_ERROR(glGenVertexArrays(1, &model->vao));
+    HANDLE_GL_ERROR(glBindVertexArray(model->vao));
+
+
+    HANDLE_GL_ERROR(glEnableVertexAttribArray(0)); // vertex data
+    if (have_normals) {
+        HANDLE_GL_ERROR(glEnableVertexAttribArray(1));
+    }
+    if (have_uv) {
+        HANDLE_GL_ERROR(glEnableVertexAttribArray(2));
+    }
+    if (have_color) {
+        HANDLE_GL_ERROR(glEnableVertexAttribArray(3));
+    }
+
+    HANDLE_GL_ERROR(glGenBuffers(1, &model->vbo));
+    HANDLE_GL_ERROR(glBindBuffer(GL_ARRAY_BUFFER, model->vbo));
+
+    HANDLE_GL_ERROR(glBufferData(GL_ARRAY_BUFFER, buffer_size, data, GL_STATIC_DRAW));
+    HANDLE_GL_ERROR(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,  stride, (void*)0));
+
+    if (have_normals) {
+        HANDLE_GL_ERROR(
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)normals_offset)
+        );
+    }
+    if (have_uv) {
+        HANDLE_GL_ERROR(
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)uv_offset)
+        );
+    }
+    if (have_color) {
+        HANDLE_GL_ERROR(
+            glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, stride, (void*) color_offset)
+        );
+    }
+    /* HANDLE_GL_ERROR(glBindBuffer(GL_ARRAY_BUFFER, 0)); */
+    HANDLE_GL_ERROR(glBindVertexArray(0));
+    return model;
+}
+
 
 /**
  * Dessiner le modèle.
@@ -212,41 +277,23 @@ struct model *model_load_wavefront(const char *path)
  */
 void model_draw(struct model *m)
 {
-    HANDLE_GL_ERROR(glBindBuffer(GL_ARRAY_BUFFER, m->vbo));
-    HANDLE_GL_ERROR(glEnableClientState(GL_VERTEX_ARRAY));
-    HANDLE_GL_ERROR(glVertexPointer(3, GL_DOUBLE, sizeof(struct vertex), NULL));
-    if (m->normal) {
-	HANDLE_GL_ERROR(glEnableClientState(GL_NORMAL_ARRAY));
-	HANDLE_GL_ERROR(glNormalPointer(GL_DOUBLE, sizeof(struct vertex),
-                                        (void*)offsetof(struct vertex, normal)));
-    }
-    if (m->uv) {
-	HANDLE_GL_ERROR(glEnableClientState(GL_TEXTURE_COORD_ARRAY));
-	HANDLE_GL_ERROR(glTexCoordPointer(2, GL_DOUBLE, sizeof(struct vertex),
-                                          (void*)offsetof(struct vertex, tex_coord)));
-    }
-    HANDLE_GL_ERROR(glDrawArrays(GL_TRIANGLES, 0, m->vcount));
-
-    if (m->normal) {
-	HANDLE_GL_ERROR(glDisableClientState(GL_NORMAL_ARRAY));
-    }
-    if (m->uv) {
-	HANDLE_GL_ERROR(glDisableClientState(GL_TEXTURE_COORD_ARRAY));
-    }
-    HANDLE_GL_ERROR(glDisableClientState(GL_VERTEX_ARRAY));
+    HANDLE_GL_ERROR(glBindVertexArray(m->vao));
+    HANDLE_GL_ERROR(glDrawArrays(m->primitive, 0, m->nb_vertices));
 }
 
 /**
  * Libérer la mémoire occupé par le modèle.
  * @param m - Le modèle.
  */
-void model_free(struct model *m)
+void model_free(struct model *model)
 {
-    if (m == NULL)
+    if (model == NULL) {
 	return;
-    glDeleteBuffers(1, &m->vbo);
-    free(m->buffer);
-    free(m);
+    }
+    glDeleteBuffers(1, &model->vbo);
+    glDeleteVertexArrays(1, &model->vao);
+    memset(model, 0, sizeof *model);
+    free(model);
 }
 
 /**
@@ -255,19 +302,9 @@ void model_free(struct model *m)
  */
 void model_dump(struct model *m)
 {
-    puts("model_dump START");
-    for (int i = 0; i < m->vcount; i++) {
-	if (i%3 == 0)
-	    printf("triangle %d:\n", i/3);
-	struct vertex *v = &m->buffer[i];
-	printf("%lf %lf %lf\n"
-	       "%lf %lf %lf\n"
-	       "%lf %lf\n__\n",
-	       v->pos.x, v->pos.y, v->pos.z,
-	       v->normal.x, v->normal.y, v->normal.z,
-	       v->tex_coord.x, v->tex_coord.y);
-	if ((i+1)%3 == 0 && i > 0)
-	    puts("------------------");
-    }
-    puts("model_dump END");
+    puts("model");
+    printf("nb_vertices=%d\n", m->nb_vertices);
+    printf("mode=%d\n", m->primitive);
+    printf("vbo=%d\n", m->vbo);
+    printf("vao=%d\n", m->vao);
 }

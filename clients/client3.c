@@ -46,7 +46,7 @@ static int get_penguin_tile(int player, int penguin, struct graph * graph)
 {
     for (int tile = 0; tile < client.nb_tile; ++tile)
     {
-        if (graph_get_player(graph, tile) == player)
+        if (graph_get_player_id(graph, tile) == player)
         {
             if (penguin == 0) {
                 return tile;
@@ -63,7 +63,7 @@ static void parse_tile(int tile)
     int nc = tile__get_neighbour_count(tile);
     const int *neighbour = tile__get_neighbour(tile);
     int fish = tile__get_fishes(tile);
-    graph_set_fish(client.graph, tile, fish);
+    graph_set_nb_fish(client.graph, tile, fish);
     for (int i = 0; i < nc; i++)
         graph_add_edge(client.graph, tile, neighbour[i]);
 }
@@ -86,7 +86,7 @@ static void client_init(int nb_tile)
 static int client_place_penguin(void)
 {
     int tile;
-    for (tile = 0; graph_get_fish(client.graph, tile) != 1; tile ++);
+    for (tile = 0; graph_get_nb_fish(client.graph, tile) != 1; tile ++);
     struct penguin *penguin = penguin_create(tile);
     list_add_element(client.my_penguins, penguin);
     return tile;
@@ -107,9 +107,9 @@ static int do_move(int tile, int dir, int jump, struct graph *graph,
     {
         return -1;
     }
-    *tile_value = graph_get_fish(graph, tile);
-    graph_set_fish(graph, tile, -1);
-    graph_set_player(graph, dest, player);
+    *tile_value = graph_get_nb_fish(graph, tile);
+    graph_set_nb_fish(graph, tile, -1);
+    graph_set_player_id(graph, dest, player);
     return dest;
 }
 
@@ -131,7 +131,7 @@ static void client_play_safe(struct move *ret)
             {
                 if ((dest = game__move_is_valid(tile, dir, jump)) > -1)
                 {
-                    int nb_fish = graph_get_fish(client.graph, dest);
+                    int nb_fish = graph_get_nb_fish(client.graph, dest);
                     if (max_fish < nb_fish)
                     {
                         max_fish = nb_fish;
@@ -148,23 +148,23 @@ static void client_play_safe(struct move *ret)
         }
     }
     while ((dest = game__move_is_valid(tile, max_dir, max_jump)) < 0);
-    graph_set_fish(client.graph, tile, -1);
+    graph_set_nb_fish(client.graph, tile, -1);
     penguin_set_tile(p, dest);
 }
 
 static void undo_move(int tile, int dest, struct graph *graph, int player,
                       int tile_value)
 {
-    graph_set_fish(graph, tile, tile_value);
-    graph_set_player(graph, tile, player);
-    graph_set_player(graph, dest, -1);
+    graph_set_nb_fish(graph, tile, tile_value);
+    graph_set_player_id(graph, tile, player);
+    graph_set_player_id(graph, dest, -1);
 }
 
 static void update_tile(int tile)
 {
     // an updated tile is necessary for the worst:
-    graph_set_fish(client.graph, tile, -1);
-    graph_set_player(client.graph, tile, tile__get_player(tile));
+    graph_set_nb_fish(client.graph, tile, -1);
+    graph_set_player_id(client.graph, tile, tile__get_player(tile));
 }
 
 static void prev_recursif(int tours,
@@ -206,8 +206,7 @@ static void prev_recursif(int tours,
                     }
                     break;
                 }
-                score_adversaire[player_value] += graph_get_fish(graph,
-                                                                 dest);
+                score_adversaire[player_value] += graph_get_nb_fish(graph, dest);
                 if (tours != 1 && player_value != client.id - 1)
                 {
                     if (player_value == client.id) {
@@ -239,7 +238,7 @@ static void prev_recursif(int tours,
                     }
                 }
                 undo_move(tile, dest, graph, player, tile_value);
-                score_adversaire[player_value] -= graph_get_fish(graph, dest);
+                score_adversaire[player_value] -= graph_get_nb_fish(graph, dest);
             }
         }
     }
@@ -292,7 +291,7 @@ static void client_play(struct move *ret)
     }
     else
     {
-        graph_set_fish(client.graph, tile, -1);
+        graph_set_nb_fish(client.graph, tile, -1);
         penguin_set_tile(p, dest);
     }
 }
@@ -321,7 +320,7 @@ static int get_score_from_move(int tile, int dir, int jump,
     if ((dest = game__move_is_valid(tile, dir, jump)) < 0)
         return -1;
     int score = 0;
-    score += graph_get_fish(graph, dest);
+    score += graph_get_nb_fish(graph, dest);
     return score;
 }
 

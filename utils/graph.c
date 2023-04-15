@@ -1,6 +1,9 @@
 #include <stdlib.h>
-#include <utils/sorted_list.h>
-#include <utils/graph.h>
+
+#include "utils/vec.h"
+#include "utils/sorted_list.h"
+#include "utils/graph.h"
+
 
 /**
  * @file graph.c
@@ -11,17 +14,21 @@
  */
 struct successor_iterator {
     int idx;
-    struct sorted_list *successors;
+    sorted_list_t *successors;
 };
 
 /**
  * Description d'un sommet du graphe.
  */
-struct gvertex {
-    int fish;
-    int player;
+
+
+struct vertex {
     int *neighbours;
+    struct vert_data data;
 };
+typedef struct vertex vertex_t;
+
+
 
 /**
  * Description d'un graphe.
@@ -29,16 +36,17 @@ struct gvertex {
 struct graph {
     int is_oriented;
     int vert_count;
-    struct gvertex *vert;
-    struct sorted_list *edges[];
+    vertex_t *vert;
+    sorted_list_t *edges[];
 };
+
 
 /******************** iterator ***********************************/
 /**
  * Placer l'itérateur au début pour une liste des successeurs.
  * @param sc - Liste des successeurs.
  */
-void iterator_begin(struct successor_iterator *sc)
+void iterator_begin(successor_iter_t *sc)
 {
     sc->idx = 1;
     //list_get_node(sc->successor, 1);
@@ -46,14 +54,14 @@ void iterator_begin(struct successor_iterator *sc)
 
 /**
  * Obtenir la liste des successeurs d'un sommet.
- * @return struct successor_iterator * - Liste des successeurs.
+ * @return successor_iter_t * - Liste des successeurs.
  * @param g - Le graphe.
  * @param vertex - Identifiant d'un sommet dans le graphe.
  */
-struct successor_iterator
-*graph_get_successor_iterator(struct graph *g, int vertex)
+successor_iter_t
+*graph_get_successor_iterator(graph_t *g, int vertex)
 {
-    struct successor_iterator *sc = malloc(sizeof(*sc));
+    successor_iter_t *sc = malloc(sizeof(*sc));
     sc->successors = g->edges[vertex];
     iterator_begin(sc);
     return sc;
@@ -63,7 +71,7 @@ struct successor_iterator
  * Libérer la mémoire occupée par une liste des successeurs.
  * @param sc - Liste des successeurs.
  */
-void successor_iterator_free(struct successor_iterator *sc)
+void successor_iterator_free(successor_iter_t *sc)
 {
     free(sc);
 }
@@ -72,7 +80,7 @@ void successor_iterator_free(struct successor_iterator *sc)
  * Avancer l'itérateur d'une liste des successeurs.
  * @param sc - Liste des successeurs.
  */
-void iterator_next(struct successor_iterator *sc)
+void iterator_next(successor_iter_t *sc)
 {
     sc->idx ++;
 }
@@ -83,7 +91,7 @@ void iterator_next(struct successor_iterator *sc)
  * @param sc - Liste des successeurs.
  * @return int - 1 si c'est la fin, 0 sinon.
  */
-int iterator_end(struct successor_iterator *sc)
+int iterator_end(successor_iter_t *sc)
 {
     return sc->idx == slist_size(sc->successors) + 1;
 }
@@ -94,7 +102,7 @@ int iterator_end(struct successor_iterator *sc)
  * @param sc - Liste des successeurs.
  * @return int - Identifiant du successeur.
  */
-int iterator_value(struct successor_iterator *sc)
+int iterator_value(successor_iter_t *sc)
 {
     return (int)(long)slist_get_data(sc->successors, sc->idx);
 }
@@ -117,21 +125,20 @@ static int compare_int(void *a_, void *b_)
  * @param vert_count - Nombre de sommets.
  * @param is_oriented - 1 Si le graphe est orienté, 0 sinon.
  * @param imprementation - Non utilisé dans cette version.
- * @return struct graph * - Le graphe.
+ * @return graph_t * - Le graphe.
  */
-struct graph *graph_create(int vert_count, int is_oriented,
-			   int implementation)
+graph_t *graph_create(int vert_count, int is_oriented, int implementation)
 {
-    struct graph *gr =
-	malloc(sizeof(*gr) +
-	       sizeof(gr->edges[0]) * vert_count);
+    graph_t *gr = calloc(vert_count, sizeof(*gr) + sizeof(gr->edges[0]));
     gr->is_oriented = is_oriented;
     gr->vert_count = vert_count;
-    for (int i = 0; i < vert_count; i++)
+    for (int i = 0; i < vert_count; i++) {
 	gr->edges[i] = slist_create(0, &compare_int);
-    gr->vert = calloc(vert_count, sizeof(*gr->vert));
-    for (int i = 0; i < vert_count; i++)
-	gr->vert[i].player = -1;
+    }
+    gr->vert = calloc(vert_count, sizeof(gr->vert[0]));
+    for (int i = 0; i < vert_count; i++) {
+	gr->vert[i].data.player_id = -1;
+    }
     return gr;
 }
 
@@ -140,7 +147,7 @@ struct graph *graph_create(int vert_count, int is_oriented,
  * @param G - Le graphe.
  * @return size_t - Nombre de sommets dans le graphe.
  */
-size_t graph_size(const struct graph *G)
+size_t graph_size(const graph_t *G)
 {
     return G->vert_count;
 }
@@ -151,7 +158,7 @@ size_t graph_size(const struct graph *G)
  * @param vertex - Identifiant du sommet.
  * @return int - Nombre d'arêtes sortantes du sommet.
  */
-int graph_edge_count(const struct graph *g, int vertex)
+int graph_edge_count(const graph_t *g, int vertex)
 {
     return slist_size(g->edges[vertex]);
 }
@@ -161,7 +168,7 @@ int graph_edge_count(const struct graph *g, int vertex)
  * @param G - Le graphe.
  * @return int - 1 si orienté, 0 sinon.
  */
-int graph_is_oriented(const struct graph *G)
+int graph_is_oriented(const graph_t *G)
 {
     return G->is_oriented;
 }
@@ -170,7 +177,7 @@ int graph_is_oriented(const struct graph *G)
  * Libérer la mémoire occupée par le graphe.
  * @param gr - Le graphe.
  */
-void graph_destroy(struct graph *gr)
+void graph_destroy(graph_t *gr)
 {
     for (int i = 0; i < gr->vert_count; i++)
 	slist_destroy(gr->edges[i]);
@@ -185,7 +192,7 @@ void graph_destroy(struct graph *gr)
  * @param v_dst - Sommet de destination.
  * @return int - 1 si existe, 0 sinon.
  */
-int graph_has_edge(const struct graph *gr, int v_src, int v_dst)
+int graph_has_edge(const graph_t *gr, int v_src, int v_dst)
 {
     return slist_find_value(gr->edges[v_src], (void*)(long)v_dst);
 }
@@ -196,7 +203,7 @@ int graph_has_edge(const struct graph *gr, int v_src, int v_dst)
  * @param v_src - Sommet source.
  * @param v_dst - Sommet de destination.
  */
-void graph_add_edge(struct graph *gr , int v_src, int v_dst)
+void graph_add_edge(graph_t *gr , int v_src, int v_dst)
 {
     if (!graph_has_edge(gr, v_src, v_dst))
 	slist_add_value(gr->edges[v_src], (void*)(long)v_dst);
@@ -211,7 +218,7 @@ void graph_add_edge(struct graph *gr , int v_src, int v_dst)
  * @param v_src - Sommet source.
  * @param v_dst - Sommet de destination.
  */
-void graph_remove_edge(struct graph *gr , int v_src, int v_dst)
+void graph_remove_edge(graph_t *gr , int v_src, int v_dst)
 {
     slist_remove_value(gr->edges[v_src], (void*)(long)v_dst);
     if (!gr->is_oriented)
@@ -221,11 +228,11 @@ void graph_remove_edge(struct graph *gr , int v_src, int v_dst)
 /**
  * Copier un graphe.
  * @param G - Graphe à copier.
- * @return struct graph * - Copie du graphe.
+ * @return graph_t * - Copie du graphe.
  */
-struct graph *graph_copy(const struct graph *G)
+graph_t *graph_copy(const graph_t *G)
 {
-    struct graph *H = graph_create(G->vert_count, G->is_oriented,
+    graph_t *H = graph_create(G->vert_count, G->is_oriented,
 				   GRAPH_LIST);
     for (int i = 0; i < G->vert_count; i++) {
 	size_t s = slist_size(G->edges[i]);
@@ -242,16 +249,16 @@ struct graph *graph_copy(const struct graph *G)
  * Tranposer un graphe (si il est orienté).
  * @param G - Graphe à transposé (modifié).
  */
-void graph_transpose(struct graph *G)
+void graph_transpose(graph_t *G)
 {
     if (!graph_is_oriented(G))
 	return;
-    struct sorted_list **edges = malloc(sizeof(*edges) * G->vert_count);
+    sorted_list_t **edges = malloc(sizeof(*edges) * G->vert_count);
     for (int i = 0; i < G->vert_count; i++) {
 	edges[i] = slist_create(0, &compare_int);
     }
     for (int i = 0; i < G->vert_count; i++) {
-	struct sorted_list *sl = G->edges[i];
+	sorted_list_t *sl = G->edges[i];
 	while (slist_size(sl) > 0) {
 	    int j = (int)(long) slist_get_data(sl, 1);
 	    slist_remove(sl, 1);
@@ -265,48 +272,46 @@ void graph_transpose(struct graph *G)
 }
 
 /**
- * Changer le nombre de poissons sur un sommet du graphe.
+ * Changer les données sur un sommet du graphe.
  * @param g - Le graphe.
  * @param vertex - Identifiant du sommet à modifier.
  * @param fish - Nombre de poissons.
  */
-void graph_set_fish(struct graph *g, int vertex, int fish)
+void graph_set_data(graph_t *g, int vertex, const vdata_t *data)
 {
-    g->vert[vertex].fish = fish;
+    g->vert[vertex].data = *data;
 }
 
 /**
- * Obtenir le nombre de poissons présent sur un sommet du graphe.
+ * Obtenir les données sur un sommet du graphe.
  * @param g - Le graphe.
  * @param vertex - Identifiant du sommet à modifier.
  * @return int - Nombre de poissons.
  */
-int graph_get_fish(struct graph *g, int vertex)
+void graph_get_data(graph_t *g, int vertex, vdata_t *out)
 {
-    return g->vert[vertex].fish;
+    *out = g->vert[vertex].data;
 }
 
-/**
- * Changer le joueur sur un sommet du graphe.
- * @param g - Le graphe.
- * @param vertex - Identifiant du sommet à modifier.
- * @param player - Identifiant du joueur.
- */
-void graph_set_player(struct graph *g, int vertex, int player)
+void graph_set_nb_fish(graph_t *g, int vertex, int nb_fish)
 {
-    g->vert[vertex].player = player;
+    g->vert[vertex].data.nb_fish = nb_fish;
+}
+int graph_get_nb_fish(graph_t *g, int vertex)
+{
+    return g->vert[vertex].data.nb_fish;
 }
 
-/**
- * Obtenir le joueur présent sur un sommet du graphe.
- * @param g - Le graphe.
- * @param vertex - Identifiant du sommet à modifier.
- * @return int - Identifiant du joueur si présent, -1 sinon..
- */
-int graph_get_player(struct graph *g, int vertex)
+void graph_set_player_id(graph_t *g, int vertex, int player_id)
 {
-    return g->vert[vertex].player;
+    g->vert[vertex].data.player_id = player_id;
 }
+int graph_get_player_id(graph_t *g, int vertex)
+{
+    return g->vert[vertex].data.player_id;
+}
+
+
 
 /**
  * Changer les voisins d'un sommet du graphe.
@@ -314,7 +319,7 @@ int graph_get_player(struct graph *g, int vertex)
  * @param vertex - Identifiant du sommet à modifier.
  * @param neighbours - Tableau contenant les identifiants des voisins.
  */
-void graph_set_neighbours(struct graph *g, int vertex, int *neighbours)
+void graph_set_neighbours(graph_t *g, int vertex, int *neighbours)
 {
     g->vert[vertex].neighbours = neighbours;
 }
@@ -325,7 +330,7 @@ void graph_set_neighbours(struct graph *g, int vertex, int *neighbours)
  * @param vertex - Identifiant du sommet à modifier.
  * @retunr int * - Tableau contenant les identifiants des voisins.
  */
-int *graph_get_neighbours(struct graph *g, int vertex)
+int *graph_get_neighbours(graph_t *g, int vertex)
 {
     return g->vert[vertex].neighbours;
 }

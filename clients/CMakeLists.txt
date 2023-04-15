@@ -1,6 +1,6 @@
 include_directories(
   "${CMAKE_CURRENT_SOURCE_DIR}/../include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../server/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../game/include"
   )
 
 
@@ -14,7 +14,7 @@ add_library(penguins_client3 MODULE client3.c)
 target_link_libraries(penguins_client3 penguins_utils)
 
 add_library(penguins_client4 MODULE client4.c)
-target_link_libraries(penguins_client4 penguins_utils penguins_display)
+target_link_libraries(penguins_client4 penguins_utils)
 
 install(TARGETS penguins_client1 DESTINATION penguins/clients)
 # install(TARGETS penguins_client2 DESTINATION penguins/clients)

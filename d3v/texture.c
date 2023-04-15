@@ -10,8 +10,9 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 
-#include <d3v/texture.h>
-#include <d3v/d3v.h>
+#include "d3v/d3v_internal.h"
+#include "d3v/texture.h"
+#include "d3v/d3v.h"
 
 /**
  * Description d'un texture.
@@ -66,7 +67,8 @@ static unsigned char
     jpeg_destroy_decompress(&cinfo);
     fclose(f);
 
-    *width_ = width; *height_ = height;
+    *width_ = width;
+    *height_ = height;
     return texture;
 }
 
@@ -80,13 +82,18 @@ struct texture *texture_load(const char *path)
     struct texture *t = malloc(sizeof(*t));
     glGenTextures(1, &t->tex_id);
     glBindTexture(GL_TEXTURE_2D, t->tex_id);
+    printf("bind text=%d\n",t->tex_id);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     int width, height;
     t->tex_data = texture_load_jpeg(path, &width, &height);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
-		 0, GL_RGB, GL_UNSIGNED_BYTE, t->tex_data);
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGB,
+        width, height,
+        0, GL_RGB, GL_UNSIGNED_BYTE,
+        t->tex_data
+    );
     return t;
 }
 

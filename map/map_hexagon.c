@@ -6,14 +6,11 @@
 #include <stdlib.h>
 #include <math.h>
 
-
 #include "map_interface.h"
+
 #include "server/map.h"
 #include "server/coord.h"
-
 #include "display/display.h"
-#include "d3v/texture.h"
-#include "d3v/model.h"
 
 #define SQRT_3_2 0.86602540378
 
@@ -25,45 +22,22 @@ static int length;
  * @param nb_tile - Nombre de tuiles.
  * @param graph - Graphe du jeu.
  */
-static void init_graph(int dimension, int nb_tile, struct graph *graph)
+static void init_graph(int dimension, int nb_tile, graph_t *graph)
 {
     int *coord = malloc(dimension * sizeof(int));
     length = coord_get_length_side(nb_tile, dimension);
 
-    #ifdef USE_GL_DISPLAY__
-    struct model *m = NULL;
-    struct texture *t = NULL;
+    int model = -1;
+    int texture = -1;
     if (dimension >= 1 && dimension <= 3) {
-	t = texture_load("textures/glace.jpg");
-        m = model_load_wavefront("models/wavefront/hexa_tile.obj");
-	display_register_texture(t);
-	display_register_model(m);
+	texture = display_register_texture("textures/glace.jpg");
+        model = display_register_model("models/wavefront/hexa_tile.obj");
     }
-    #endif
 
     for (int i = 0; i < nb_tile; i++) {
 	int dim = length * length;
 	coord_get_coordinates_from_id(i, nb_tile, length,
 				      dimension, coord);
-        #ifdef USE_GL_DISPLAY__
-	int fish = graph_get_fish(graph, i);
-	switch (dimension) {
-	case 1:
-	    display_add_tile(i, m, t, - 0.5 * coord[0],
-			     0., coord[0] * SQRT_3_2, 0., 0.5, fish);
-	    break;
-	case 2:
-	    display_add_tile(i, m, t, coord[1] - 0.5 * coord[0],
-			     0., coord[0] * SQRT_3_2, 0., 0.5, fish);
-	    break;
-	case 3:
-	    display_add_tile(i, m, t, coord[1] - 0.5 * coord[0],
-			     coord[2], coord[0] * SQRT_3_2, 0., 0.5, fish);
-	    break;
-	default:
-	    break;
-	}
-	#endif
 
 	if (coord[0] + 1 < length && i + 1 < nb_tile)
 	    graph_add_edge(graph, i, i + 1);
@@ -81,6 +55,21 @@ static void init_graph(int dimension, int nb_tile, struct graph *graph)
 		graph_add_edge(graph, i, i + dim);
 	    dim *= length;
 	}
+
+        vdata_t data;
+	graph_get_data(graph, i, &data);
+        data.model_id = model;
+        data.texture_id = texture;
+        data.angle = 0;
+        data.scale = 0.5;
+
+	switch (dimension) {
+	case 1: data.loc = (vec3){- 0.5 * coord[0],  0., coord[0] * SQRT_3_2};   break;
+	case 2: data.loc = (vec3){coord[1] - 0.5 * coord[0], 0., coord[0] * SQRT_3_2};  break;
+	case 3: data.loc = (vec3){coord[1] - 0.5 * coord[0], coord[2], coord[0] * SQRT_3_2}; break;
+	default:  break;
+	}
+        graph_set_data(graph, i, &data);
     }
     free(coord);
 }
@@ -112,7 +101,7 @@ static int get_number_directions(int tile, int dimension, int nb_tile)
  * @return int - Destination du mouvment
  */
 static int get_id_from_move(int origin, int *direction, int dimension,
-                                int nb_tile, struct graph *graph)
+                                int nb_tile, graph_t *graph)
 {
     int *coord = malloc(dimension * sizeof(int));
     int step = 1 - 2 * (*direction % 2);

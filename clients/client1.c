@@ -46,12 +46,12 @@ static void parse_tile(int tile)
 {
     int nc = tile__get_neighbour_count(tile);
     const int *neighbour = tile__get_neighbour(tile);
-    int fish = tile__get_fishes(tile);
-    if (fish == 1){
+    int nb_fish = tile__get_fishes(tile);
+    if (nb_fish == 1){
 	union iv f = {.i=tile};
 	list_add_element(client.tile_fish1, f.v);
     }
-    graph_set_fish(client.graph, tile, fish);
+    graph_set_nb_fish(client.graph, tile, nb_fish);
     for (int i = 0; i < nc; i++) {
 	graph_add_edge(client.graph, tile, neighbour[i]);
     }
@@ -75,7 +75,7 @@ static int greater_fish_count_neighbour(int tile)
     int max = -2;
     for (iterator_begin(it); !iterator_end(it); iterator_next(it)) {
 	int nti = iterator_value(it);
-	int fish = graph_get_fish(client.graph, nti);
+	int fish = graph_get_nb_fish(client.graph, nti);
 	if (fish > max) {
 	    max = fish;
 	}
@@ -111,7 +111,7 @@ static struct penguin *chose_penguin(void)
 
 static void update_tile(int tile)
 {
-    int fish = graph_get_fish(client.graph, tile);
+    int fish = graph_get_nb_fish(client.graph, tile);
     if (fish == 1) {
 	int l = list_size(client.tile_fish1);
 	for (int i = 1; i <= l; i++) {
@@ -124,10 +124,10 @@ static void update_tile(int tile)
 	}
     }
     // an updated tile is necessary for the worst:
-    graph_set_fish(client.graph, tile, -1);
+    graph_set_nb_fish(client.graph, tile, -1);
 
     // set the owner of the tile, it may interest us
-    graph_set_player(client.graph, tile, tile__get_player(tile));
+    graph_set_player_id(client.graph, tile, tile__get_player(tile));
 }
 
 void client_play(struct move *ret)
@@ -144,7 +144,7 @@ void client_play(struct move *ret)
 	for (int dir = 0; dir < nb_dir; dir++) {
 	    for (int jump = 1; jump < 10; jump++) {
 		if ((dest = game__move_is_valid(tile, dir, jump)) > -1) {
-		    int nb_fish = graph_get_fish(client.graph, dest);
+		    int nb_fish = graph_get_nb_fish(client.graph, dest);
 		    if (max_fish < nb_fish) {
 			max_fish = nb_fish;
 			max_dir = dir;
@@ -157,7 +157,7 @@ void client_play(struct move *ret)
 	    }
 	}
     } while ((dest = game__move_is_valid(tile, max_dir, max_jump)) < 0);
-    graph_set_fish(client.graph, tile, -1);
+    graph_set_nb_fish(client.graph, tile, -1);
     penguin_set_tile(p, dest);
 }
 

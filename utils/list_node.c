@@ -11,8 +11,8 @@
 struct node {
     void *data;
     int is_sentinel;
-    struct node *next;
-    struct node *previous;
+    node_t *next;
+    node_t *previous;
 };
 
 /**
@@ -21,13 +21,14 @@ struct node {
  * @param flags - Options.
  * 1 -> Noeud sentinel.
  * 2 -> Noeud contenant des données.
- * @return struct node * - Le noeud créé.
+ * @return node_t * - Le noeud créé.
  */
-struct node *node_create(void *data, int flags)
+node_t *node_create(void *data, int flags)
 {
-    struct node *node = malloc(sizeof(*node));
-    if ((flags & NODE_DATA) != 0)
+    node_t *node = malloc(sizeof(*node));
+    if ((flags & NODE_DATA) != 0) {
 	node->data = data;
+    }
     node->is_sentinel = ((flags & NODE_SENTINEL) != 0);
     return node;
 }
@@ -36,7 +37,7 @@ struct node *node_create(void *data, int flags)
  * Libérer la mémoire occupée par un noeud.
  * @param node - Noeud à supprimer.
  */
-void node_free(struct node *node)
+void node_free(node_t *node)
 {
     free(node);
 }
@@ -44,9 +45,9 @@ void node_free(struct node *node)
 /**
  * Obtenir le noeud suivant.
  * @param node - Noeud actuel.
- * @return struct node * - Noeud suivant.
+ * @return node_t * - Noeud suivant.
  */
-struct node *node_get_next(struct node *node)
+node_t *node_get_next(node_t *node)
 {
     return node->next;
 }
@@ -54,9 +55,9 @@ struct node *node_get_next(struct node *node)
 /**
  * Obtenir le noeud précédent.
  * @param node - Noeud actuel.
- * @return struct node * - Noeud précédent.
+ * @return node_t * - Noeud précédent.
  */
-struct node *node_get_previous(struct node *node)
+node_t *node_get_previous(node_t *node)
 {
     return node->previous;
 }
@@ -66,7 +67,7 @@ struct node *node_get_previous(struct node *node)
  * @param node - Noeud à modifier.
  * @param next - Nouveau noeud suivant.
  */
-void node_set_next(struct node *node, struct node *next)
+void node_set_next(node_t *node, node_t *next)
 {
     node->next = next;
 }
@@ -76,7 +77,7 @@ void node_set_next(struct node *node, struct node *next)
  * @param node - Noeud à modifier.
  * @param previous - Nouveau noeud  précédent.
  */
-void node_set_previous(struct node *node, struct node *previous)
+void node_set_previous(node_t *node, node_t *previous)
 {
     node->previous = previous;
 }
@@ -86,7 +87,7 @@ void node_set_previous(struct node *node, struct node *previous)
  * @param node - Noeud à lire.
  * @return void * - L'élément contenu par le noeud.
  */
-void *node_get_data(struct node *node)
+void *node_get_data(node_t *node)
 {
     return node->data;
 }
@@ -96,7 +97,7 @@ void *node_get_data(struct node *node)
  * @param node - Noeud à modifier.
  * @param data - L'élément à contenir.
  */
-void node_set_data(struct node *node, void *data)
+void node_set_data(node_t *node, void *data)
 {
     node->data = data;
 }
@@ -106,7 +107,7 @@ void node_set_data(struct node *node, void *data)
  * @param node - Noeud à lire.
  * @return 0 si non sentinelle, autre valeur sinon
  */
-int node_is_sentinel(struct node *node)
+int node_is_sentinel(node_t *node)
 {
     return node->is_sentinel;
 }

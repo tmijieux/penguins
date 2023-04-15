@@ -35,7 +35,10 @@ struct map_methods {
      */
     int (*get_id_from_move)(int src, int *direction, int n_dim, int n_tile, struct graph*);
 
+    char dummy1[20];
+
     void (*exit)(void);
+    char dummy2[22];
 };
 
 void map_register(struct map_methods*);

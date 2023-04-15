@@ -20,16 +20,19 @@ currently available map types are:
 
 # touche controle:
 
-FLECHE GAUCHE: retour arrière  
-FLECHE DROITE: avancer  
+FLECHE GAUCHE: retour arrière
+FLECHE DROITE: avancer
 
-FLECHE HAUT: deplacer la case sélectionée pour afficher les aretes du graphes entre les cases  
-FLECHE BAS: deplacer la case sélectionée pour afficher les aretes du graphes entre les cases  
+FLECHE HAUT: deplacer la case sélectionée pour afficher les aretes du graphes entre les cases
+FLECHE BAS: deplacer la case sélectionée pour afficher les aretes du graphes entre les cases
 
-P: Activer/Désactiver "l'autoplay"  
-S: abandonner (s pour surrender)  
-
+P: Activer/Désactiver "l'autoplay"
+S: abandonner (s pour surrender)
+R: réinitialiser la caméra
+5 (pavé numérique): switcher entre project orthogonale et perspective
 
 # screenshot
 
 ![penguins 3d penrose](/assets/penguins3dpenrose.png)
+
+

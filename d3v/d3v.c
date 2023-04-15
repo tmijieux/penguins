@@ -3,15 +3,18 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
 
-#include <GL/glx.h>
+#define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
+#include <GLFW/glfw3.h>
 
 #include "d3v/d3v.h"
+#include "d3v/camera.h"
+#include "utils/math.h"
 #include "d3v/d3v_internal.h"
 #include "d3v/scene.h"
+#include "d3v/shader.h"
+#include "d3v/object.h"
 
 #define WINDOW_TITLE "Penguin"
 #define WINDOW_POSITION_X 200
@@ -20,252 +23,176 @@
 #define HEIGHT  700
 #define WIDTH   700
 
-#define GLX_CONTEXT_MAJOR_VERSION_ARB       0x2091
-#define GLX_CONTEXT_MINOR_VERSION_ARB       0x2092
+GLFWwindow *window;
+static int main_loop_quit = 0;
+static int main_loop_running = 0;
+static int animation_frame_requested = 0;
+static int need_redraw = 1;
 
-
-Display *display __internal;
-Window win __internal;
-GLXContext ctx __internal;
-Colormap cmap __internal ;
-
-int _d3v_binary_dir = 0;
+__internal int _d3v_binary_dir = 0;
 
 void d3v_init_asset_path(int v)
 {
     _d3v_binary_dir = v;
 }
 
-typedef GLXContext(*glXCreateContextAttribsARBProc)
-(Display *, GLXFBConfig, GLXContext, Bool, const int *);
 
-// Helper to check for extension string presence.  Adapted from:
-//   http://www.opengl.org/resources/features/OGLextensions/
-static int is_extension_supported(const char *ext_list, const char *extension)
+
+/* // Helper to check for extension string presence.  Adapted from: */
+/* //   http://www.opengl.org/resources/features/OGLextensions/ */
+/* static int is_extension_supported(const char *ext_list, const char *extension) */
+/* { */
+/*     const char *start; */
+/*     const char *where, *terminator; */
+
+/*     /\* Extension names should not have spaces. *\/ */
+/*     where = strchr(extension, ' '); */
+/*     if (where || *extension == '\0') { */
+/* 	return 0; */
+/*     } */
+
+/*     /\* It takes a bit of care to be fool-proof about parsing the */
+/*        OpenGL extensions string. Don't be fooled by sub-strings, */
+/*        etc. *\/ */
+/*     for (start = ext_list;;) { */
+/* 	where = strstr(start, extension); */
+
+/* 	if (!where) { */
+/* 	    break; */
+/*         } */
+
+/* 	terminator = where + strlen(extension); */
+
+/* 	if (where == start || *(where - 1) == ' ') */
+/*         { */
+/* 	    if (*terminator == ' ' || *terminator == '\0') { */
+/* 		return 1; */
+/*             } */
+/*         } */
+/* 	start = terminator; */
+/*     } */
+/*     return 0; */
+/* } */
+
+
+static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    const char *start;
-    const char *where, *terminator;
-
-    /* Extension names should not have spaces. */
-    where = strchr(extension, ' ');
-    if (where || *extension == '\0') {
-	return 0;
-    }
-
-    /* It takes a bit of care to be fool-proof about parsing the
-       OpenGL extensions string. Don't be fooled by sub-strings,
-       etc. */
-    for (start = ext_list;;) {
-	where = strstr(start, extension);
-
-	if (!where) {
-	    break;
-        }
-
-	terminator = where + strlen(extension);
-
-	if (where == start || *(where - 1) == ' ')
-        {
-	    if (*terminator == ' ' || *terminator == '\0') {
-		return 1;
-            }
-        }
-	start = terminator;
-    }
-    return 0;
+    glViewport(0, 0, width, height);
 }
 
-static int ctx_error_occurred = 0;
-
-static int ctx_error_handler(Display *dpy, XErrorEvent *ev)
+void window_refresh_callback(GLFWwindow* window)
 {
-    ctx_error_occurred = 1;
-    return 0;
+    need_redraw = 1;
+}
+
+static void window_pos_callback(GLFWwindow* window, int xpos, int ypos)
+{
+    need_redraw = 1;
+}
+
+static void window_size_callback(GLFWwindow* window, int width, int height)
+{
+    need_redraw = 1;
+}
+
+static void window_close_callback(GLFWwindow *window)
+{
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+    main_loop_quit = 1;
+}
+
+static void window_iconify_callback(GLFWwindow* window, int iconified)
+{
+    need_redraw = 1;
+    /* if (iconified) */
+    /* { */
+    /*     // The window was iconified */
+    /* } */
+    /* else */
+    /* { */
+    /*     // The window was restored */
+    /* } */
+}
+
+
+static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+
+    if (action == GLFW_PRESS) {
+        d3v_key(scancode, xpos, ypos);
+    }
+
+    need_redraw = 1;
+}
+
+
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    /* printf("cursor pos = %g %g \n", xpos, ypos); */
+    need_redraw = 1;
+    d3v_mouse_motion((int) xpos, (int)ypos);
+}
+
+static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    need_redraw = 1;
+
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+
+    /* printf("mouse button = %d %d %d\n", button,action,mods); */
+
+    d3v_button(button, action, (int)xpos, (int)ypos);
+    /* if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) */
+    /*     popup_menu(); */
+}
+
+static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    /* printf("scroll = x=%.3g y=%.3g \n", xoffset, yoffset); */
+    /* d3v_button(, action, 0, 0); */
+    if (yoffset > 0) {
+        d3v_camera_add_distance(scene.camera, -0.4);
+    } else if (yoffset < 0) {
+        d3v_camera_add_distance(scene.camera, 0.4);
+    }
+    need_redraw = 1;
 }
 
 static int create_context(void)
 {
-    display = XOpenDisplay(NULL);
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    if (!display) {
-	fprintf(stderr, "Failed to open X display\n");
-	return -1;
+    window = glfwCreateWindow( WIDTH, HEIGHT, WINDOW_TITLE, NULL, NULL);
+    if (!window) {
+        fprintf(stderr, "Failed to create window\n");
+        glfwTerminate();
+        exit(EXIT_FAILURE);
     }
-    // Get a matching FB config
-    static int visual_attribs[] = {
-	GLX_X_RENDERABLE, True,
-	GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
-	GLX_RENDER_TYPE, GLX_RGBA_BIT,
-	GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
-	GLX_RED_SIZE, 8,
-	GLX_GREEN_SIZE, 8,
-	GLX_BLUE_SIZE, 8,
-	GLX_ALPHA_SIZE, 8,
-	GLX_DEPTH_SIZE, 24,
-	GLX_STENCIL_SIZE, 8,
-	GLX_DOUBLEBUFFER, True,
-	//GLX_SAMPLE_BUFFERS  , 1,
-	//GLX_SAMPLES         , 4,
-	None
-    };
+    glfwMakeContextCurrent(window);
 
-    int glx_major, glx_minor;
+    // callbacks
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    // FBConfigs were added in GLX version 1.3.
-    if (!glXQueryVersion(display, &glx_major, &glx_minor)
-        || ((glx_major == 1) && (glx_minor < 3))
-        || (glx_major < 1)) {
-	printf("Invalid GLX version");
-	return -1;
-    }
+    // window
+    glfwSetWindowSizeCallback(window, window_size_callback);//resized
+    glfwSetWindowPosCallback(window, window_pos_callback);//moved
+    glfwSetWindowIconifyCallback(window, window_iconify_callback); // minimized/restore
+    glfwSetWindowRefreshCallback(window, window_refresh_callback); // "damaged" (hidden/outofsight)
+    glfwSetWindowCloseCallback(window, window_close_callback);
 
-    int fbcount;
-    GLXFBConfig *fbc = glXChooseFBConfig(display, DefaultScreen(display),
-					 visual_attribs, &fbcount);
-    if (!fbc) {
-	fprintf(stderr, "Failed to retrieve a framebuffer config\n");
-	return -1;
-    }
-    // Pick the FB config/visual with the most samples per pixel
-    int best_fbc = -1, worst_fbc = -1,
-	best_num_samp = -1, worst_num_samp = 999;
 
-    for (int i = 0; i < fbcount; ++i) {
-	XVisualInfo *vi = glXGetVisualFromFBConfig(display, fbc[i]);
-	if (vi) {
-	    int samp_buf, samples;
-	    glXGetFBConfigAttrib(display, fbc[i], GLX_SAMPLE_BUFFERS,
-				 &samp_buf);
-	    glXGetFBConfigAttrib(display, fbc[i], GLX_SAMPLES, &samples);
-	    if (best_fbc < 0 || (samp_buf && (samples > best_num_samp)))
-		best_fbc = i, best_num_samp = samples;
-	    if (worst_fbc < 0 || (!samp_buf || samples < worst_num_samp))
-		worst_fbc = i, worst_num_samp = samples;
-	}
-	XFree(vi);
-    }
+    // inputs
+    glfwSetKeyCallback(window, key_callback);//keyboard
+    glfwSetCursorPosCallback(window, cursor_position_callback);//mousemove
+    glfwSetMouseButtonCallback(window, mouse_button_callback);//mouseclick
+    glfwSetScrollCallback(window, scroll_callback);//mousescroll
 
-    GLXFBConfig bestFbc = fbc[best_fbc];
-
-    // Be sure to free the FBConfig list allocated by glXChooseFBConfig()
-    XFree(fbc);
-
-    // Get a visual
-    XVisualInfo *vi = glXGetVisualFromFBConfig(display, bestFbc);
-
-    XSetWindowAttributes swa;
-    swa.colormap = cmap =
-	XCreateColormap(display, RootWindow(display, vi->screen),
-			vi->visual, AllocNone);
-
-    swa.background_pixmap = None;
-    swa.border_pixel = 0;
-    swa.event_mask = KeyPressMask | ButtonPressMask |
-	ButtonReleaseMask | Button1MotionMask | Button3MotionMask |
-	StructureNotifyMask | ExposureMask;
-
-    win = XCreateWindow(display, RootWindow(display, vi->screen),
-			WINDOW_POSITION_X, WINDOW_POSITION_Y,
-			WIDTH, HEIGHT, 0, vi->depth, InputOutput, vi->visual,
-			CWBorderPixel | CWColormap | CWEventMask, &swa);
-    if (!win) {
-	fprintf(stderr, "Failed to create window.\n");
-	return -1;
-    }
-    // Done with the visual info data
-    XFree(vi);
-
-    XStoreName(display, win, WINDOW_TITLE);
-
-    XMapWindow(display, win);
-
-    // Get the default screen's GLX extension list
-    const char *glxExts =
-	glXQueryExtensionsString(display, DefaultScreen(display));
-
-    // NOTE: It is not necessary to create or make current to a context before
-    // calling glXGetProcAddressARB
-    glXCreateContextAttribsARBProc glXCreateContextAttribsARB = 0;
-    glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)
-	glXGetProcAddressARB((const GLubyte *)
-			     "glXCreateContextAttribsARB");
-
-    ctx = 0;
-
-    // Install an X error handler so the application won't exit if GL 3.0
-    // context allocation fails.
-    //
-    // Note this error handler is global.
-    // All display connections in all threads of a process use the same error
-    // handler, so be sure to guard against other threads issuing X commands
-    // while this code is running.
-    ctx_error_occurred = 0;
-    int (*old_handler) (Display *, XErrorEvent *) =
-	XSetErrorHandler(&ctx_error_handler);
-
-    // Check for the GLX_ARB_create_context extension string and the function.
-    // If either is not present, use GLX 1.3 context creation method.
-    if (!is_extension_supported(glxExts, "GLX_ARB_create_context") ||
-	!glXCreateContextAttribsARB) {
-	fprintf(stderr, "glXCreateContextAttribsARB() not found"
-		" ... using old-style GLX context\n");
-	ctx = glXCreateNewContext(display, bestFbc, GLX_RGBA_TYPE, 0, True);
-    } else { // If it does, try to get a GL 3.0 context!
-	int context_attribs[] = {
-	    GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-	    GLX_CONTEXT_MINOR_VERSION_ARB, 0,
-	    //GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-	    None
-	};
-
-	ctx = glXCreateContextAttribsARB(display, bestFbc, 0, True,
-					 context_attribs);
-
-	// Sync to ensure any errors generated are processed.
-	XSync(display, False);
-	if (!ctx_error_occurred && ctx) {
-	    //  printf("Created GL 3.0 context\n");
-	} else {
-	    // Couldn't create GL 3.0 context.
-	    // Fall back to old-style 2.x context.
-
-	    // When a context version below 3.0 is requested,
-	    // implementations will return the newest context version
-	    // compatible with OpenGL versions less than version 3.0.
-
-	    // GLX_CONTEXT_MAJOR_VERSION_ARB = 1
-	    context_attribs[1] = 1;
-	    // GLX_CONTEXT_MINOR_VERSION_ARB = 0
-	    context_attribs[3] = 0;
-
-	    ctx_error_occurred = 0;
-
-	    fprintf(stderr, "Failed to create GL 3.0 context"
-		    " ... using old-style GLX context\n");
-	    ctx = glXCreateContextAttribsARB(display, bestFbc, 0, True,
-					     context_attribs);
-	}
-    }
-
-    // Sync to ensure any errors generated are processed.
-    XSync(display, False);
-
-    // Restore the original error handler
-    XSetErrorHandler(old_handler);
-
-    if (ctx_error_occurred || !ctx) {
-	fprintf(stderr, "Failed to create an OpenGL context\n");
-	return -1;
-    }
-
-    /*
-    // Verifying that context is a direct context
-    if (!glXIsDirect(display, ctx)) {
-	printf("Indirect GLX rendering context obtained\n");
-    } else {
-        printf("Direct GLX rendering context obtained\n");
-    }
-    */
     return 0;
 }
 
@@ -279,88 +206,91 @@ static void opengl_init(void)
     HANDLE_GL_ERROR(glClearColor(0.6, 0.9, 0.9, 1.0));
     HANDLE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-    HANDLE_GL_ERROR(glColor3f(1.0, 1.0, 1.0));
-
-    HANDLE_GL_ERROR(glShadeModel(GL_SMOOTH));
+    /* HANDLE_GL_ERROR(glColor3f(1.0, 1.0, 1.0)); */
+    /* HANDLE_GL_ERROR(glShadeModel(GL_SMOOTH)); */
     //glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 
     // Parametrage du materiau
-    HANDLE_GL_ERROR(glEnable(GL_LIGHTING));
-    HANDLE_GL_ERROR(glEnable(GL_COLOR_MATERIAL));
-    HANDLE_GL_ERROR(glEnable(GL_DEPTH_TEST));
-    HANDLE_GL_ERROR(glEnable(GL_NORMALIZE));
+    /* HANDLE_GL_ERROR(glEnable(GL_LIGHTING)); */
+    /* HANDLE_GL_ERROR(glEnable(GL_COLOR_MATERIAL)); */
+    /* HANDLE_GL_ERROR(glEnable(GL_DEPTH_TEST)); */
+    /* HANDLE_GL_ERROR(glEnable(GL_NORMALIZE)); */
 
-    HANDLE_GL_ERROR(glColorMaterial(GL_FRONT, GL_DIFFUSE));
-    HANDLE_GL_ERROR(glPolygonMode(GL_FRONT, GL_FILL));
+    /* HANDLE_GL_ERROR(glColorMaterial(GL_FRONT, GL_DIFFUSE)); */
+    /* HANDLE_GL_ERROR(glPolygonMode(GL_FRONT, GL_FILL)); */
 
-    HANDLE_GL_ERROR(glMatrixMode(GL_MODELVIEW));
-    HANDLE_GL_ERROR(glLoadIdentity());
+    /* HANDLE_GL_ERROR(glMatrixMode(GL_MODELVIEW)); */
+    /* HANDLE_GL_ERROR(glLoadIdentity()); */
 }
 
-static int main_loop_quit = 0;
-static int user_need_redraw = 0;
-static int need_redraw = 1;
 
-void d3v_exit_main_loop(void)
+void d3v_request_exit_from_main_loop(void)
 {
     main_loop_quit = 1;
 }
 
-void d3v_post_redisplay(void)
+void d3v_request_animation_frame(void)
 {
-    user_need_redraw = 1;
+    animation_frame_requested = 1;
+    /* need_redraw = 1; */
 }
 
-static int d3v_main_loop(void)
+uint32_t VAO, VBO;
+
+void init_data(void)
 {
-    XEvent xev;
+    float vertices[] = {
+        // positions          // colors           // texture coords
+         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+        -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+    };
 
-    while (!main_loop_quit) {
-	if (XPending(display) || !need_redraw) {
-	    XNextEvent(display, &xev);
-	    switch (xev.type) {
-	    case KeyPress:
-		d3v_key(xev.xkey.keycode, xev.xkey.x, xev.xkey.y);
-		d3v_special_input(xev.xkey.keycode, xev.xkey.x, xev.xkey.y);
-		break;
 
-	    case ButtonPress:
-	    case ButtonRelease:
-		d3v_button(xev.xbutton.button, xev.type,
-			   xev.xbutton.x, xev.xbutton.y);
-		break;
+    HANDLE_GL_ERROR(glGenVertexArrays(1, &VAO));
+    HANDLE_GL_ERROR(glBindVertexArray(VAO));
 
-	    case MotionNotify:
-		d3v_mouse_motion(xev.xmotion.x, xev.xmotion.y);
-		break;
+    HANDLE_GL_ERROR(glEnableVertexAttribArray(0));
+    HANDLE_GL_ERROR(glEnableVertexAttribArray(1));
+    HANDLE_GL_ERROR(glEnableVertexAttribArray(2));
 
-	    case ConfigureNotify:
-		d3v_reshape(xev.xconfigure.width,
-			    xev.xconfigure.height);
-		break;
+    HANDLE_GL_ERROR(glGenBuffers(1, &VBO));
+    HANDLE_GL_ERROR(glBindBuffer(GL_ARRAY_BUFFER, VBO));
 
-	    case DestroyNotify:
-		main_loop_quit = 1;
-		break;
+    HANDLE_GL_ERROR(
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            sizeof(vertices),
+            vertices,
+            GL_STATIC_DRAW
+        )
+    );
+    HANDLE_GL_ERROR(
+        glVertexAttribPointer(
+            0, 3, GL_FLOAT, GL_FALSE,
+            8 * sizeof(float),
+            (void*)0
+        )
+    );
+    HANDLE_GL_ERROR(
+        glVertexAttribPointer(
+            1, 3, GL_FLOAT, GL_FALSE,
+            8 * sizeof(float),
+            (void*)(3 * sizeof(float))
+        )
+    );
+    HANDLE_GL_ERROR(
+        glVertexAttribPointer(
+            2, 2, GL_FLOAT, GL_FALSE,
+            8 * sizeof(float),
+            (void*)(6 * sizeof(float))
+        )
+    );
 
-	    default:
-		break;
-	    };
-	    need_redraw = 1;
-	} else {
-	    if (!need_redraw)
-		continue;
-	    d3v_scene_draw();
-	    if (user_need_redraw) {
-		need_redraw = 1;
-		user_need_redraw = 0;
-	    } else {
-		need_redraw = 0;
-	    }
-	}
-    }
-    return 0;
+    /* HANDLE_GL_ERROR(glBindBuffer(GL_ARRAY_BUFFER, 0)); */
+    HANDLE_GL_ERROR(glBindVertexArray(0));
 }
+
 
 
 static void GLAPIENTRY
@@ -390,38 +320,104 @@ static void opengl_displayinfo(void)
     printf("GL_VERSION  = %s\n", glGetString(GL_VERSION));
     printf("GL_RENDERER = %s\n", glGetString(GL_RENDERER));
     printf("GL_VENDOR   = %s\n", glGetString(GL_VENDOR));
+
+    int nrAttributes;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
+    printf("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
 }
 
-
 // PUBLIC
-
-int d3v_init(int object_count_clue)
+int d3v_module_init(int object_count_clue)
 {
     create_context();
-
-    glXMakeCurrent(display, win, ctx);
-
     opengl_displayinfo();
     opengl_init_error();
     opengl_init();
-    d3v_scene_init(object_count_clue);
+    d3v_scene_module_init(object_count_clue);
     return 0;
 }
 
-int d3v_start(vec3 *pos)
+int d3v_set_initial_camera_position(const vec3 *pos)
 {
-    d3v_scene_start(pos);
-    d3v_main_loop();
-    return 0;
+    d3v_camera_set_look(scene.camera, pos);
+    scene.first_look = *pos;
 }
 
-int d3v_exit(void)
+
+/**
+ * Dessine les bases : (O, x,y,z)
+ */
+static void create_world_basis(void)
 {
-    d3v_scene_exit();
+    float basis_data[] = {
+        // coord          // color
+        0.0, 0.0, 0.0,    1.0, 0.0, 0.0, // red   x
+        1.0, 0.0, 0.0,    1.0, 0.0, 0.0, // red   x
+        0.0, 0.0, 0.0,    0.0, 1.0, 0.0, // green y
+        0.0, 1.0, 0.0,    0.0, 1.0, 0.0, // green y
+        0.0, 0.0, 0.0,    0.0, 0.0, 1.0, // blue  z
+        0.0, 0.0, 1.0,    0.0, 0.0, 1.0, // blue  z
+    };
+    model_t *model = create_model_from_data(
+        basis_data, 6, sizeof(basis_data), GL_LINES,
+        0, 1, 0,
+        0, 3*sizeof(float), 0,
+        6*sizeof(float)
+    );
 
-    XDestroyWindow(display, win);
-    XFreeColormap(display, cmap);
-    XCloseDisplay(display);
+    vec3 p = {0,0,0};
+    int program = get_or_load_shader(PENGUIN_SHADER_COLOR_NO_MODEL);
+    object_t *obj = d3v_object_create(model, NULL, p, p, p, program, "world basis");
+    d3v_add_object(obj);
 
+    /* program = get_or_load_shader(PENGUIN_SHADER_COLOR_NO_PROJ); */
+    /* obj = d3v_object_create(model, NULL, p, p, p, program, "clip basis"); */
+    /* d3v_add_object(obj); */
+}
+
+
+int d3v_main_loop(void)
+{
+    main_loop_running = 1;
+    glfwMakeContextCurrent(window);
+
+    /* init_data(); */
+    HANDLE_GL_ERROR(glEnable(GL_DEPTH_TEST));
+    create_world_basis();
+
+    while (!main_loop_quit) {
+
+        glfwPollEvents();
+
+        if (need_redraw) {
+            need_redraw = 0;
+
+            HANDLE_GL_ERROR(glClearColor(0.6, 0.9, 0.9, 1.0));
+            HANDLE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
+            d3v_scene_draw();
+
+            /* mat4 model; */
+            /* uint32_t k2 = glGetUniformLocation(3, "model"); */
+            /* make_identity(&model); */
+            /* glUniformMatrix4fv(k2, 1, GL_TRUE, model.m); */
+            /* HANDLE_GL_ERROR(glBindVertexArray(VAO)); */
+            /* HANDLE_GL_ERROR(glDrawArrays(GL_TRIANGLES, 0, 3)); */
+
+            glfwSwapBuffers(window);
+
+        }
+        if (animation_frame_requested) {
+            animation_frame_requested = 0;
+            need_redraw = 1;
+        }
+        sleep(1.0 / 60.0);
+    }
+
+    d3v_scene_module_exit();
+    glfwDestroyWindow(window);
+    glfwTerminate();
+
+    main_loop_running = 0;
     return 0;
 }

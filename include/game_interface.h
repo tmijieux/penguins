@@ -39,20 +39,21 @@ const int *tile__get_neighbour(int tile_id);
 
 
 struct move;
+typedef struct move move_t;
 
 // return the id of the origin tile of the move
-int move__get_orig(struct move*);
+int move__get_orig(move_t*);
 
 // return the direction of the move
-int move__get_direction(struct move*);
+int move__get_direction(move_t*);
 
 // return the number of jump in the move
-int move__get_nb_jump(struct move*);
+int move__get_nb_jump(move_t*);
 
 // send the order to the server
 // first parameter is the parameter of client_play
 // in theory, only the last order is considerated by the server
-void move__set(struct move*, int tile_id_orig, int direction, int nb_move);
+void move__set(move_t*, int tile_id_orig, int direction, int nb_move);
 
 
 
