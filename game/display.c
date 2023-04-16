@@ -524,7 +524,6 @@ static void load_models_and_textures(void)
 
 static void load_tiles(void)
 {
-    printf("in load_tiles() = display.nb_tile=%d\n", Display.nb_tile);
     for (int tile_id = 0; tile_id < Display.nb_tile; ++tile_id) {
         vdata_t data;
         graph_get_data(Game.tile_graph, tile_id, &data);
@@ -533,10 +532,6 @@ static void load_tiles(void)
             data.loc, data.angle, data.scale, data.nb_fish
         );
         // penguins cannot be added here because they might be added in parallel
-
-        /* if (data.player_id != -1) { */
-        /*     display_add_penguin(tile_id, data.player_id); */
-        /* } */
     }
 }
 

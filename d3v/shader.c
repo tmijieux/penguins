@@ -26,7 +26,6 @@ int get_or_load_shader(ShaderId shader_id)
     if (shader_initialized[shader_id]) {
         return shader_programs[shader_id];
     }
-    printf("Loading shader_id=%d\n",shader_id);
 
     int shader_program = -1;
     switch (shader_id) {
@@ -142,7 +141,6 @@ int load_shader_from_source(char *vertex_shader_source,char *fragment_shader_sou
     glUseProgram(shader_program);
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
-    printf("shader_program=%d\n",shader_program);
 
     return shader_program;
 }

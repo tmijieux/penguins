@@ -82,7 +82,6 @@ struct texture *texture_load(const char *path)
     struct texture *t = malloc(sizeof(*t));
     glGenTextures(1, &t->tex_id);
     glBindTexture(GL_TEXTURE_2D, t->tex_id);
-    printf("bind text=%d\n",t->tex_id);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

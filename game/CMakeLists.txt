@@ -32,7 +32,7 @@ target_include_directories(
 target_compile_definitions(
   penguins_server
   PRIVATE
-  DEBUG
+  # DEBUG
   )
 
 target_link_options(

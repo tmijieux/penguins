@@ -200,31 +200,6 @@ static int create_context(void)
 }
 
 
-/**
- *  Initialisation du module OpenGL.
- */
-static void opengl_init(void)
-{
-    //Initialisation de l'etat d'OpenGL
-    HANDLE_GL_ERROR(glClearColor(0.6, 0.9, 0.9, 1.0));
-    HANDLE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-    /* HANDLE_GL_ERROR(glColor3f(1.0, 1.0, 1.0)); */
-    /* HANDLE_GL_ERROR(glShadeModel(GL_SMOOTH)); */
-    //glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
-
-    // Parametrage du materiau
-    /* HANDLE_GL_ERROR(glEnable(GL_LIGHTING)); */
-    /* HANDLE_GL_ERROR(glEnable(GL_COLOR_MATERIAL)); */
-    /* HANDLE_GL_ERROR(glEnable(GL_DEPTH_TEST)); */
-    /* HANDLE_GL_ERROR(glEnable(GL_NORMALIZE)); */
-
-    /* HANDLE_GL_ERROR(glColorMaterial(GL_FRONT, GL_DIFFUSE)); */
-    /* HANDLE_GL_ERROR(glPolygonMode(GL_FRONT, GL_FILL)); */
-
-    /* HANDLE_GL_ERROR(glMatrixMode(GL_MODELVIEW)); */
-    /* HANDLE_GL_ERROR(glLoadIdentity()); */
-}
 
 
 void d3v_request_exit_from_main_loop(void)
@@ -260,6 +235,7 @@ static void opengl_init_error(void)
     HANDLE_GL_ERROR(glDebugMessageCallback( MessageCallback, 0));
 }
 
+#ifdef DEBUG
 static void opengl_displayinfo(void)
 {
     printf("GL_VERSION  = %s\n", glGetString(GL_VERSION));
@@ -270,14 +246,17 @@ static void opengl_displayinfo(void)
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
     printf("Maximum nr of vertex attributes supported: %d\n", nrAttributes);
 }
+#endif // DEBUG
 
 // PUBLIC
 int d3v_module_init(int object_count_clue)
 {
     create_context();
+    #ifdef DEBUG
     opengl_displayinfo();
+    #endif // DEBUG
+
     opengl_init_error();
-    opengl_init();
     d3v_scene_module_init(object_count_clue);
     return 0;
 }

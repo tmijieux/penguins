@@ -366,9 +366,9 @@ void server_init_all_clients(int nb_player)
  * Première phase de la partie: Demander aux joueurs de placer les pingouins.
  * @param nb_player - Nombre de joueurs.
  */
-void server_place_penguins(int nb_player)
+void server_place_penguins(int first_player_id, int nb_player)
 {
-    int player_id = 0;
+    int player_id = first_player_id;
     while (!has_distributed_all_penguins())
     {
 	Game.nb_distributed_penguins++;
@@ -409,9 +409,9 @@ void server_place_penguins(int nb_player)
  * chacun leur tour un mouvement.
  * @param nb_player - Nombre de joueurs.
  */
-void server_game(int nb_player)
+void server_game(int first_player_id, int nb_player)
 {
-    int player_id = 0;
+    int player_id = first_player_id;
     fprintf(stderr, "Players are moving penguins...\n");
 
     while (!server_game_end())
@@ -482,7 +482,9 @@ void server_run()
             sleep(1.0/60.0);
         }
     }
-    server_place_penguins(nb_player);
+    int first_player_id = rand() % nb_player;
+    printf("first_player_id=%d\n", first_player_id);
+    server_place_penguins(first_player_id, nb_player);
 
     fprintf(stderr, "Players finished placing penguins...\n");
     Game.is_place_phase = 0;
@@ -499,5 +501,5 @@ void server_run()
 	}
     }
 
-    server_game(nb_player);
+    server_game(first_player_id, nb_player);
 }

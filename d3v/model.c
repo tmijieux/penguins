@@ -107,8 +107,6 @@ model_scan_wavefront(FILE *f, int *vertex_count, int *normal_count,
  */
 struct model *model_load_wavefront(const char *path)
 {
-
-    printf("_d3v_binary_dir=%d\n", _d3v_binary_dir);
     int fd = openat(_d3v_binary_dir, path, O_RDONLY);
     if (fd == -1) {
         perror(path);
