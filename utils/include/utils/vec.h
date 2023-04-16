@@ -1,6 +1,10 @@
 #ifndef PENGUINS_VEC_H
 #define PENGUINS_VEC_H
 
+typedef struct ivec2 {
+    int x, y;
+} ivec2;
+
 typedef struct vec2 {
     float x, y;
 } vec2;

@@ -148,6 +148,7 @@ static void display_read_move(enum SENS s)
 /*******************************************************/
 /************ DRAWING METHODS **************************/
 
+#ifdef DEBUG
 /**
  * Dessine les lignes droites valides à partir d'une tuile pour
  * atteindre les autres tuiles.
@@ -176,6 +177,7 @@ static void draw_direction_link(void)
     HANDLE_GL_ERROR(glBindVertexArray(Display.link_vao));
     HANDLE_GL_ERROR(glDrawArrays(GL_LINES, 0, 2*Display.nb_links));
 }
+#endif // DEBUG
 
 static void draw(void)
 {
@@ -190,7 +192,27 @@ static void draw(void)
     #endif // DEBUG
 
     for (int i = 0; i < Display.nb_tile_alloc; ++i) {
-        d3v_object_draw(Display.tile_objects[i]);
+
+        object_t *obj = Display.tile_objects[i];
+        d3v_object_draw(obj);
+
+        int is_hidden = d3v_object_is_hidden(obj);
+
+        int nb_fish = Display.tile_nb_fishes[i];
+        int peng_id = Display.tile_penguins_id[i];
+
+        if (is_hidden || nb_fish < 0 || nb_fish >=  10 || peng_id != -1) {
+            // cannot render above 10
+            continue;
+        }
+        char data[2] = {0};
+        snprintf(data,2, "%d", nb_fish);
+
+        vec3 pos;
+        d3v_object_get_position(obj, &pos);
+        pos.y += 0.05;
+
+        d3v_draw_text(data[0], pos);
     }
 
     for (int i = 0; i < Display.nb_penguin_alloc; ++i) {
@@ -461,7 +483,7 @@ static void init_display_module(void)
 	Display.link[i] = calloc(nb_tile, sizeof(*Display.link[0]));
     }
 
-    Display.autoplay = 0;
+    Display.autoplay = 1;
     Display.records = record_create(nb_tile + (nb_penguin * 2));
 
     Display.tile_objects = calloc(nb_tile, sizeof(Display.tile_objects[0]));
@@ -587,11 +609,13 @@ static void free_display_module(void)
  * @param src - Tuile d'origine de la ligne.
  * @param dst - Tuile de destination de la ligne.
  */
+#ifdef DEBUG
 static void display_add_link(int src, int dst)
 {
     Display.should_draw_links = 1;
     Display.link[src][dst] = 1;
 }
+
 
 static void setup_directions_links(void)
 {
@@ -612,7 +636,7 @@ static void setup_directions_links(void)
         }
     }
 }
-
+#endif
 
 
 /*** STARTS *****/

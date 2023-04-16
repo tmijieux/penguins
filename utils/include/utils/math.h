@@ -25,7 +25,7 @@ void mat3_multiply(vec3 *P, const mat3 *mat);
 void mat4_multiply(vec4 *P, const mat4 *mat);
 void mat4_multiply3(vec3 *P, const mat4 *mat);
 
-void mat4_transpose(mat4 *inout);
+void mat4d_transpose(mat4d *inout);
 
 void mm_multiply(const mat4 *u, const mat4 *v, mat4 *w);
 

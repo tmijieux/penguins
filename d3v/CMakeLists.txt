@@ -1,4 +1,6 @@
 
+find_package(Freetype REQUIRED)
+
 set(_d3v_src
   d3v.c
   scene.c
@@ -34,5 +36,7 @@ target_link_libraries(d3v
   GLU # GL utility
   # X11 (X11 window management)
   glfw # GL FrameWork (portable cross-platform window management) (alternative to GLUT)
+
+  Freetype::Freetype
   )
 install(TARGETS d3v DESTINATION penguins/lib)

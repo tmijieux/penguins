@@ -3,10 +3,13 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
 #include <GLFW/glfw3.h>
+#include <GL/gl.h>
+
 
 #include "d3v/d3v.h"
 #include "d3v/camera.h"
@@ -235,64 +238,6 @@ void d3v_request_animation_frame(void)
     /* need_redraw = 1; */
 }
 
-uint32_t VAO, VBO;
-
-void init_data(void)
-{
-    float vertices[] = {
-        // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-    };
-
-
-    HANDLE_GL_ERROR(glGenVertexArrays(1, &VAO));
-    HANDLE_GL_ERROR(glBindVertexArray(VAO));
-
-    HANDLE_GL_ERROR(glEnableVertexAttribArray(0));
-    HANDLE_GL_ERROR(glEnableVertexAttribArray(1));
-    HANDLE_GL_ERROR(glEnableVertexAttribArray(2));
-
-    HANDLE_GL_ERROR(glGenBuffers(1, &VBO));
-    HANDLE_GL_ERROR(glBindBuffer(GL_ARRAY_BUFFER, VBO));
-
-    HANDLE_GL_ERROR(
-        glBufferData(
-            GL_ARRAY_BUFFER,
-            sizeof(vertices),
-            vertices,
-            GL_STATIC_DRAW
-        )
-    );
-    HANDLE_GL_ERROR(
-        glVertexAttribPointer(
-            0, 3, GL_FLOAT, GL_FALSE,
-            8 * sizeof(float),
-            (void*)0
-        )
-    );
-    HANDLE_GL_ERROR(
-        glVertexAttribPointer(
-            1, 3, GL_FLOAT, GL_FALSE,
-            8 * sizeof(float),
-            (void*)(3 * sizeof(float))
-        )
-    );
-    HANDLE_GL_ERROR(
-        glVertexAttribPointer(
-            2, 2, GL_FLOAT, GL_FALSE,
-            8 * sizeof(float),
-            (void*)(6 * sizeof(float))
-        )
-    );
-
-    /* HANDLE_GL_ERROR(glBindBuffer(GL_ARRAY_BUFFER, 0)); */
-    HANDLE_GL_ERROR(glBindVertexArray(0));
-}
-
-
-
 static void GLAPIENTRY
 MessageCallback( GLenum source,
                  GLenum type,
@@ -337,7 +282,7 @@ int d3v_module_init(int object_count_clue)
     return 0;
 }
 
-int d3v_set_initial_camera_position(const vec3 *pos)
+void d3v_set_initial_camera_position(const vec3 *pos)
 {
     d3v_camera_set_look(scene.camera, pos);
     scene.first_look = *pos;
@@ -375,13 +320,155 @@ static void create_world_basis(void)
     /* d3v_add_object(obj); */
 }
 
+typedef struct Character {
+    uint32_t TextureID;  // ID handle of the glyph texture
+    ivec2   Size;       // Size of glyph
+    ivec2   Bearing;    // Offset from baseline to left/top of glyph
+    uint32_t Advance;    // Offset to advance to next glyph
+} Character;
+
+Character characters[20];
+
+void init_freetype(void)
+{
+    FT_Library ft;
+    if (FT_Init_FreeType(&ft)) {
+        fprintf(stderr, "Could not init freetype!!\n");
+        exit(EXIT_FAILURE);
+    }
+    FT_Face face;
+    const char *fontpath = "fonts/OpenSans-Regular.ttf";
+    if (FT_New_Face(ft, fontpath, 0, &face)) {
+        fprintf(stderr, "Could not load font %s!!\n", fontpath);
+        exit(EXIT_FAILURE);
+    }
+    FT_Set_Pixel_Sizes(face, 0, 48);
+
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
+    for (char c = '0'; c <= '9'; ++c) {
+        if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
+            fprintf(stderr, "Failed to load glyph %c!!\n", c);
+            exit(EXIT_FAILURE);
+        }
+        uint32_t texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RED,
+            face->glyph->bitmap.width,
+            face->glyph->bitmap.rows,
+            0,
+            GL_RED,
+            GL_UNSIGNED_BYTE,
+            face->glyph->bitmap.buffer
+        );
+        // set texture options
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // now store character for later use
+        Character character = {
+            texture,
+            (ivec2){face->glyph->bitmap.width, face->glyph->bitmap.rows},
+            (ivec2){face->glyph->bitmap_left, face->glyph->bitmap_top},
+            face->glyph->advance.x
+        };
+        characters[c-'0'] = character;
+    }
+    FT_Done_Face(face);
+    FT_Done_FreeType(ft);
+}
+
+
+uint32_t text_VAO, text_VBO;
+uint32_t text_SHADER;
+void prepare_text_rendering(void)
+{
+    text_SHADER = get_or_load_shader(PENGUIN_SHADER_TEXT);
+    glGenVertexArrays(1, &text_VAO);
+    glGenBuffers(1, &text_VBO);
+
+    glBindVertexArray(text_VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, text_VBO);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+void d3v_draw_text(char c, vec3 pos)
+{
+    const float scale = 1.0;
+    if (c < '1' || c > '9') {
+        fprintf(stderr, "Cannot render other than digits between '1', and '9'\n");
+        return;
+    }
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glUseProgram(text_SHADER);
+    //glUniform3f(glGetUniformLocation(text_SHADER, "textColor"), color.x, color.y, color.z);
+
+    mat4 trans;
+    make_translation_matrix(pos, &trans);
+    glUniformMatrix4fv(glGetUniformLocation(text_SHADER, "model"), 1, GL_TRUE, trans.m);
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(text_VAO);
+
+    // iterate through all characters
+    Character ch = characters[c-'0'];
+
+    float w = ch.Size.x * scale;
+    float h = ch.Size.y * scale;
+    w /= 200;
+    h /= 200;
+
+    float x = -w/2;
+    float y = -h/2;
+
+    float xpos = x + (ch.Bearing.x * scale) / 200;
+    float ypos = y - ((ch.Size.y - ch.Bearing.y) * scale) / 200;
+
+    // update VBO for each character
+    float vertices[6][4] = {
+        { xpos,     ypos + h,   0.0f, 0.0f },
+        { xpos,     ypos,       0.0f, 1.0f },
+        { xpos + w, ypos,       1.0f, 1.0f },
+
+        { xpos,     ypos + h,   0.0f, 0.0f },
+        { xpos + w, ypos,       1.0f, 1.0f },
+        { xpos + w, ypos + h,   1.0f, 0.0f }
+    };
+    // render glyph texture over quad
+    glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+    // update content of VBO memory
+    glBindBuffer(GL_ARRAY_BUFFER, text_VBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // render quad
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
 
 int d3v_main_loop(void)
 {
     main_loop_running = 1;
     glfwMakeContextCurrent(window);
 
-    /* init_data(); */
+    init_freetype();
+    prepare_text_rendering();
+
     HANDLE_GL_ERROR(glEnable(GL_DEPTH_TEST));
     create_world_basis();
 
@@ -396,13 +483,6 @@ int d3v_main_loop(void)
             HANDLE_GL_ERROR(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
             d3v_scene_draw();
-
-            /* mat4 model; */
-            /* uint32_t k2 = glGetUniformLocation(3, "model"); */
-            /* make_identity(&model); */
-            /* glUniformMatrix4fv(k2, 1, GL_TRUE, model.m); */
-            /* HANDLE_GL_ERROR(glBindVertexArray(VAO)); */
-            /* HANDLE_GL_ERROR(glDrawArrays(GL_TRIANGLES, 0, 3)); */
 
             glfwSwapBuffers(window);
 

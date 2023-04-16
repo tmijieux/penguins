@@ -184,7 +184,7 @@ void d3v_scene_draw()
 __internal
 void d3v_scene_module_init(int obj_count_clue)
 {
-    scene.camera = d3v_camera_create((vec3) {0.0 ,0.0, 0.0}, 10., -90.0, 0, 0);
+    scene.camera = d3v_camera_create((vec3) {0.0 ,0.0, 0.0}, 10., -90.0, -90.0, 0);
     scene.light = d3v_light_create();
 
     scene.object_count = 0;

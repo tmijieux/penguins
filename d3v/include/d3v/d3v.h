@@ -27,9 +27,11 @@ void d3v_init_asset_path(int v) __export;
 int d3v_module_init(int object_count_hint) __export ;
 int d3v_module_exit(void) __export ;
 int d3v_main_loop(void) __export ;
-int d3v_set_initial_camera_position(const vec3 *pos);
+void d3v_set_initial_camera_position(const vec3 *pos);
 
 void d3v_request_animation_frame(void);
 void d3v_request_exit_from_main_loop(void);
+
+void d3v_draw_text(char c, vec3 pos);
 
 #endif // PENGUINS_D3V_H

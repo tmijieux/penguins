@@ -54,6 +54,12 @@ int get_or_load_shader(ShaderId shader_id)
             from_file("shaders/FRAGMENT_color.glsl")
         );
         break;
+    case PENGUIN_SHADER_TEXT:
+        shader_program = load_shader_from_source(
+            from_file("shaders/VERTEX_text.glsl"),
+            from_file("shaders/FRAGMENT_text.glsl")
+        );
+        break;
     default:
         break;
     }

@@ -116,5 +116,6 @@ int display_mc_get(struct mouseclick *out)
     } else {
 	out->object_type = MC_TILE;
     }
+    Display.autoplay = 1;
     return 0;
 }

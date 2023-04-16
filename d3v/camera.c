@@ -249,7 +249,7 @@ void d3v_camera_draw(camera_t *c)
     }
 }
 
-static matrix_to_double(const mat4 *in, mat4d *out)
+static void matrix_to_double(const mat4 *in, mat4d *out)
 {
     for (int i = 0; i < 16; ++i) {
         out->m[i] = (double)in->m[i];
