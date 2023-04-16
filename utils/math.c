@@ -4,7 +4,7 @@
  */
 
 #define __USE_XOPEN 1
-
+#define _USE_MATH_DEFINES // required for windows
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

@@ -2,17 +2,13 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include <game_interface.h>
-#include <server/move_impl.h>
-#include <server/server.h>
-#include <utils/graph.h>
+#include "penguins/game_interface.h"
+#include "server/move_impl.h"
+#include "server/server.h"
+#include "utils/graph.h"
 
 #define SERVER_NB_TILE 81
 #define SERVER_NB_DIMENSION 3
-
-/**
- * @file
- */
 
 void test_get_orig(void)
 {

@@ -6,8 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
+#include "penguins_opengl.h"
 
 #include "utils/vec.h"
 #include "utils/math.h"
@@ -61,10 +60,10 @@ d3v_object_create(
     obj->scale = scale;
     obj->model = model;
     if (tex != NULL) {
-	obj->tex_id = texture_get_id(tex);
-	obj->textured = 1;
+        obj->tex_id = texture_get_id(tex);
+        obj->textured = 1;
     } else {
-	obj->textured = 0;
+        obj->textured = 0;
     }
     obj->colored = !obj->textured;
     obj->hidden = 0;
@@ -157,13 +156,13 @@ void d3v_object_scale(struct object *obj, vec3 scale)
 void d3v_object_draw(struct object *obj)
 {
     if (obj == NULL || obj->hidden) {
-	return;
+         return;
     }
 
     if (obj->textured) {
         HANDLE_GL_ERROR(glBindTexture(GL_TEXTURE_2D, obj->tex_id));
     } else {
-	HANDLE_GL_ERROR(glBindTexture(GL_TEXTURE_2D, 0));
+        HANDLE_GL_ERROR(glBindTexture(GL_TEXTURE_2D, 0));
     }
 
     mat4 t, rx,ry,rz, s;
@@ -198,8 +197,8 @@ void d3v_object_draw(struct object *obj)
 int d3v_object_pos_equal(struct object *obj, vec3 loc)
 {
     return obj->loc.x == loc.x &&
-	obj->loc.y == loc.y &&
-	obj->loc.z == loc.z;
+    obj->loc.y == loc.y &&
+    obj->loc.z == loc.z;
 }
 
 /**

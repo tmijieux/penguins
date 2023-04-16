@@ -1,10 +1,14 @@
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdint.h>
 
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
+#include "penguins_opengl.h"
 
 #include "d3v/d3v.h"
 #include "d3v/shader.h"
@@ -129,7 +133,6 @@ int load_shader_from_source(char *vertex_shader_source,char *fragment_shader_sou
     glAttachShader(shader_program, fragment_shader);
     glLinkProgram(shader_program);
 
-
     glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
     if (!success) {
         memset(infoLog, 0, sizeof(infoLog));
@@ -138,7 +141,6 @@ int load_shader_from_source(char *vertex_shader_source,char *fragment_shader_sou
 
         exit(EXIT_FAILURE);
     }
-    glUseProgram(shader_program);
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
 

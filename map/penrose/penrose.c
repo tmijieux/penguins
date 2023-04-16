@@ -67,7 +67,7 @@ static struct {
 /**
  * Obtenir le minimum de deux entiers.
  */
-static inline int min(int a, int b)
+static inline int _min(int a, int b)
 {
     return a < b ? a : b;
 }
@@ -343,7 +343,7 @@ void penrose_init(int nb_lozenge, int dimension)
     float z = 0.;
 
     while (nb_lozenge > 0) {
-	int nb_lozenge_per_surface = min(nb_lozenge, surface);
+	int nb_lozenge_per_surface = _min(nb_lozenge, surface);
 	int a = penrose_add_point(scale * 0.5, scale * ORD, z);
 	int b = penrose_add_point(0., 0., z);
 	int c = penrose_add_point(scale, 0., z);

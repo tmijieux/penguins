@@ -4,7 +4,7 @@
 
 #include <math.h>
 
-#include "game_interface.h"
+#include "penguins/game_interface.h"
 
 #include "utils/graph.h"
 #include "server/server.h"

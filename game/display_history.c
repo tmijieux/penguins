@@ -5,37 +5,53 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef __unix__
 #include <pthread.h>
+#else
+#include <Windows.h>
+#endif
 
 #include "display/record.h"
 
 /**
  * Description d'un mouvement.
  */
-struct dmove {
+typedef struct dmove {
     int src;
     int dst;
-};
+} dmove_t;
 
 // Mutex pour le thread.
-static pthread_mutex_t _record_mut;
+#ifdef __unix__
+static pthread_mutex_t _record_mut = PTHREAD_MUTEX_INITIALIZER;
+#else
+int mutex_initialized = 0;
+CRITICAL_SECTION _record_mut;
+#endif
 
 struct record {
-    struct dmove *moves;
     int capacity;
     int size;
     int pos;
     int forward;
+    dmove_t *moves;
 };
 
 /**
  * Création du module d'enregistrement des mouvements.
  * @param capacity - Capacité total d'enregistrement.
- * @return struct record * - Le module d'enregistrement.
+ * @return record_t * - Le module d'enregistrement.
  */
-struct record *record_create(int capacity)
+record_t *record_create(int capacity)
 {
-    struct record *rec = calloc(1, sizeof(*rec));
+#ifndef __unix__
+    if (!mutex_initialized) {
+        mutex_initialized = 1;
+        InitializeCriticalSection(&_record_mut);
+    }
+#endif
+
+    record_t *rec = calloc(1, sizeof(*rec));
     rec->moves = calloc(capacity, sizeof(*rec->moves));
     rec->capacity = capacity;
     rec->size = 0;
@@ -48,7 +64,7 @@ struct record *record_create(int capacity)
  * Libérer la mémoire occupée par le module d'enregistrement.
  * @param l - Le module d'enregistrement.
  */
-void record_free(struct record *rec)
+void record_free(record_t *rec)
 {
     free(rec->moves);
     memset(rec, 0, sizeof *rec);
@@ -62,17 +78,30 @@ void record_free(struct record *rec)
  * @param dst - Destinationd du mouvement.
  * @return int - 1 Si l'ajout a fonctionné.
  */
-int record_add(struct record *rec, int src, int dst)
+int record_add(record_t *rec, int src, int dst)
 {
+#ifdef __unix__
     pthread_mutex_lock(&_record_mut);
+#else
+    EnterCriticalSection(&_record_mut);
+#endif
     if (rec->size < rec->capacity) {
-	rec->moves[rec->size].src = src;
-	rec->moves[rec->size].dst = dst;
-	++rec->size;
-	pthread_mutex_unlock(&_record_mut);
-	return 1;
+        rec->moves[rec->size].src = src;
+        rec->moves[rec->size].dst = dst;
+        ++rec->size;
+#ifdef __unix__
+        pthread_mutex_unlock(&_record_mut);
+#else
+        LeaveCriticalSection(&_record_mut);
+#endif
+        return 1;
     }
+
+#ifdef __unix__
     pthread_mutex_unlock(&_record_mut);
+#else
+    LeaveCriticalSection(&_record_mut);
+#endif
     return 0;
 }
 
@@ -81,10 +110,10 @@ int record_add(struct record *rec, int src, int dst)
  * @param l - Le module d'enregistrement.
  * @return int - 1 Si le curseur a avancé.
  */
-int record_next(struct record *rec)
+int record_next(record_t *rec)
 {
     if (record_is_end(rec)) {
-	return 0;
+        return 0;
     }
     ++rec->pos;
     rec->forward = 1;
@@ -96,10 +125,10 @@ int record_next(struct record *rec)
  * @param l - Le module d'enregistrement.
  * @return int - 1 Si le curseur a reculé.
  */
-int record_previous(struct record *rec)
+int record_previous(record_t *rec)
 {
     if (record_is_begin(rec)) {
-	return 0;
+        return 0;
     }
     --rec->pos;
     rec->forward = 0;
@@ -111,11 +140,17 @@ int record_previous(struct record *rec)
  * @param l - Le module d'enregistrement.
  * @return int - 1 Si c'est la fin.
  */
-int record_is_end(struct record *rec)
+int record_is_end(record_t *rec)
 {
+#ifdef __unix__
     pthread_mutex_lock(&_record_mut);
     int b = rec->pos >= rec->size - 1;
     pthread_mutex_unlock(&_record_mut);
+#else
+    EnterCriticalSection(&_record_mut);
+    int b = rec->pos >= rec->size - 1;
+    LeaveCriticalSection(&_record_mut);
+#endif
     return b;
 }
 
@@ -124,7 +159,7 @@ int record_is_end(struct record *rec)
  * @param l - Le module d'enregistrement.
  * @return int - 1 Si c'est le début.
  */
-int record_is_begin(struct record *rec)
+int record_is_begin(record_t *rec)
 {
     return rec->pos < 0;
 }
@@ -134,11 +169,17 @@ int record_is_begin(struct record *rec)
  * @param l - Le module d'enregistrement.
  * @return int - 1 Si valide.
  */
-int record_pos_is_valid(struct record *rec)
+int record_pos_is_valid(record_t *rec)
 {
+#ifdef __unix__
     pthread_mutex_lock(&_record_mut);
     int b = rec->pos >= -1 && rec->pos < rec->size;
     pthread_mutex_unlock(&_record_mut);
+#else
+    EnterCriticalSection(&_record_mut);
+    int b = rec->pos >= -1 && rec->pos < rec->size;
+    LeaveCriticalSection(&_record_mut);
+#endif
     return b;
 }
 
@@ -147,10 +188,11 @@ int record_pos_is_valid(struct record *rec)
  * @param l - Le module d'enregistrement.
  * @return int - Id de la tuile source.
  */
-int record_get_current_src(struct record *rec)
+int record_get_current_src(record_t *rec)
 {
-    if (record_pos_is_valid(rec) && rec->forward)
-	return rec->moves[rec->pos].src;
+    if (record_pos_is_valid(rec) && rec->forward) {
+        return rec->moves[rec->pos].src;
+    }
     return -1;
 }
 
@@ -159,10 +201,11 @@ int record_get_current_src(struct record *rec)
  * @param l - Le module d'enregistrement.
  * @return int - Id de la tuile de destination.
  */
-int record_get_current_dest(struct record *rec)
+int record_get_current_dest(record_t *rec)
 {
-    if (record_pos_is_valid(rec) && rec->forward)
-	return rec->moves[rec->pos].dst;
+    if (record_pos_is_valid(rec) && rec->forward) {
+        return rec->moves[rec->pos].dst;
+    }
     return -1;
 }
 
@@ -171,10 +214,11 @@ int record_get_current_dest(struct record *rec)
  * @param l - Le module d'enregistrement.
  * @return int - Id de la tuile source.
  */
-int record_get_rewind_src(struct record *rec)
+int record_get_rewind_src(record_t *rec)
 {
-    if (record_pos_is_valid(rec) && rec->forward == 0)
-	return rec->moves[rec->pos + 1].dst;
+    if (record_pos_is_valid(rec) && rec->forward == 0) {
+        return rec->moves[rec->pos + 1].dst;
+    }
     return -1;
 }
 
@@ -183,9 +227,10 @@ int record_get_rewind_src(struct record *rec)
  * @param l - Le module d'enregistrement.
  * @return int - Id de la tuile de destination.
  */
-int record_get_rewind_dest(struct record *rec)
+int record_get_rewind_dest(record_t *rec)
 {
-    if (record_pos_is_valid(rec) && rec->forward == 0)
-	return rec->moves[rec->pos + 1].src;
+    if (record_pos_is_valid(rec) && rec->forward == 0) {
+        return rec->moves[rec->pos + 1].src;
+    }
     return -1;
 }

@@ -1,12 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
 #include <ctype.h>
 
-#include <utils/math.h>
+#include "utils/math.h"
+#include "server/option_parser.h"
 
-#include "option.h"
+#ifdef POSIX
+# include <getopt.h>
+#else
+# include "./ya_getopt.h"
+# define optarg ya_optarg
+# define optopt ya_optopt
+# define getoptlong ya_getoptlong
+#endif
 
 extern char *optarg;
 extern int optopt;

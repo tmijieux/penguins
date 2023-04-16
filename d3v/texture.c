@@ -1,14 +1,18 @@
 /**
  * @file texture.c
  */
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <jpeglib.h>
+// #include <jpeglib.h> // FIXME
 #include <fcntl.h>
 
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
+#include "penguins_opengl.h"
+
+#include "stb_image.h"
 
 #include "d3v/d3v_internal.h"
 #include "d3v/texture.h"
@@ -29,47 +33,21 @@ struct texture {
  * @param height_ - Hauteur du fichier chargé.
  * @return static unsigned char * - Données de la texture.
  */
-static unsigned char
-*texture_load_jpeg(const char *name, int *width_, int *height_)
+static
+uint8_t*
+texture_load_jpeg(const char *path, int *width_, int *height_)
 {
-    struct jpeg_decompress_struct cinfo;
-    struct jpeg_error_mgr jerr;
-    FILE*f;
-    unsigned char *line;
-
-    int fd = openat(_d3v_binary_dir, name, O_RDONLY);
-    if ((f = fdopen(fd, "rb")) == NULL) {
-	perror(name);
+    unsigned char *data;
+    FILE *f;
+    if ((f = fopen(path, "rb")) == NULL) {
+	perror(path);
 	exit(EXIT_FAILURE);
     }
-    cinfo.err = jpeg_std_error(&jerr);
-    jpeg_create_decompress(&cinfo);
-    jpeg_stdio_src(&cinfo, f);
-    jpeg_read_header(&cinfo, TRUE);
-
-    if (cinfo.jpeg_color_space == JCS_GRAYSCALE) {
-	fprintf(stdout, "Erreur: %s doit etre de type RGB\n", name);
-	exit(EXIT_FAILURE);
-    }
-
-    int width = cinfo.image_width;
-    int height = cinfo.image_height;
-
-    unsigned char *texture = malloc(height * width * 3);
-
-    jpeg_start_decompress(&cinfo);
-    line = texture;
-    while (cinfo.output_scanline < cinfo.output_height) {
-	line = texture + 3 * width * cinfo.output_scanline;
-	jpeg_read_scanlines(&cinfo, &line, 1);
-    }
-    jpeg_finish_decompress(&cinfo);
-    jpeg_destroy_decompress(&cinfo);
+    int nrChannels;
+    data = stbi_load_from_file(f, width_, height_, &nrChannels, 0);
     fclose(f);
 
-    *width_ = width;
-    *height_ = height;
-    return texture;
+    return data;
 }
 
 /**

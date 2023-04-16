@@ -1,7 +1,7 @@
 #ifndef PENGUINS_MAP_H
 #define PENGUINS_MAP_H
 
-#include "map_interface.h"
+#include "penguins/map_interface.h"
 #include "utils/graph.h"
 
 extern struct map_methods map;

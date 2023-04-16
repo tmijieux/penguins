@@ -1,24 +1,24 @@
 #ifndef DISPLAY_RECORD_H
 #define DISPLAY_RECORD_H
 
-struct record;
+typedef struct record record_t;
 
-struct record *record_create(int capacity);
-void record_free(struct record *l);
+record_t* record_create(int capacity);
+void record_free(record_t *l);
 
-int record_add(struct record *l, int tileSrc, int tileDest);
+int record_add(record_t *l, int tileSrc, int tileDest);
 
 // Return 1 : cursor moved. 0 otherwise.
-int record_next(struct record *l);
-int record_previous(struct record *l);
+int record_next(record_t *l);
+int record_previous(record_t *l);
 
-int record_is_end(struct record *l);
-int record_is_begin(struct record *l);
+int record_is_end(record_t *l);
+int record_is_begin(record_t *l);
 
 // Return -1 if there isn't data.
-int record_get_current_src(struct record *l);
-int record_get_current_dest(struct record *l);
-int record_get_rewind_src(struct record *l);
-int record_get_rewind_dest(struct record *l);
+int record_get_current_src(record_t *l);
+int record_get_current_dest(record_t *l);
+int record_get_rewind_src(record_t *l);
+int record_get_rewind_dest(record_t *l);
 
 #endif // DISPLAY_RECORD_H

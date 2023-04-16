@@ -1,25 +1,11 @@
 
-set(_penguins_server_src
-  map.c
-  server.c
-  tile.c
-  move.c
-  coord.c
-  player.c
-  client.c
-  path.c
-  main.c
-  option.c
-
-  display.c
-  display_animator.c
-  display_mouseclick.c
-  display_history.c
-  )
+file(GLOB _game_src *.c)
+file(GLOB _game_hdrs ./include/**/*.h)
 
 add_executable(
   penguins_server
-  ${_penguins_server_src}
+  ${_game_src}
+  ${_game_hdrs}
   )
 
 target_include_directories(
@@ -43,14 +29,10 @@ target_link_options(
   "-rdynamic"
   )
 
-target_link_libraries(
-  penguins_server
-  #
-  penguins_utils
-  d3v
-  m
-  dl
-  )
+target_link_libraries(penguins_server penguins_utils d3v)
+if (UNIX)
+  target_link_libraries(penguins_server m)
+endif (UNIX)
 
 install(
   TARGETS penguins_server
@@ -61,6 +43,7 @@ install(
   FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/launch.sh
   ${CMAKE_CURRENT_SOURCE_DIR}/debug.sh
+  ${CMAKE_CURRENT_SOURCE_DIR}/launch.bat
   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
   DESTINATION penguins
   )

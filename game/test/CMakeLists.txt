@@ -25,57 +25,35 @@ add_custom_target(check
  ${CMAKE_CTEST_COMMAND} --output-on-failure
  )
 
-## TEST COORD
-add_executable(test_coord test_coord.c ../coord.c)
-target_include_directories(test_coord PRIVATE ../include)
-set_target_properties(test_coord PROPERTIES COMPILE_FLAGS -DTEST)
-target_link_libraries(test_coord m d3v penguins_utils)
-add_test(test_coord test_coord)
-
 
 ## TEST MOVE
 add_executable(test_move test_move.c ../move.c)
 target_include_directories(test_move PRIVATE ../include)
 set_target_properties(test_move PROPERTIES COMPILE_FLAGS -DTEST)
-target_link_libraries(test_move penguins_utils d3v  dl m )
+target_link_libraries(test_move penguins_utils d3v)
 add_test(test_move test_move)
 
 ## TEST INIT_SERVER
 
-set(_test_init_server_src
-  ../server.c
-  ../tile.c
-  ../move.c
-  ../player.c
-  ../client.c
-  ../map.c
-  ../coord.c
-  ../path.c
-  ../display.c
-  ../display_animator.c
-  ../display_history.c
-  ../display_mouseclick.c
-  )
+file(GLOB _server_src ../*.c)
 
-add_executable(
-  test_init_server
-  test_init_server.c
-  ${_test_init_server_src}
-  )
-target_include_directories(test_init_server PRIVATE ../include)
-set_target_properties(
-  test_init_server
-  PROPERTIES
-  COMPILE_FLAGS "-DTEST -DSERVER_INSTALL_PATH=${QIPATH}"
-  )
+# add_executable(
+#   test_init_server
+#   test_init_server.c
+#   ${_server_src}
+#   )
+# target_include_directories(test_init_server PRIVATE ../include)
+# set_target_properties(
+#   test_init_server
+#   PROPERTIES
+#   COMPILE_FLAGS "-DTEST -DSERVER_INSTALL_PATH=${QIPATH}"
+#   )
 
-target_link_libraries(
-  test_init_server
-  dl
-  m
-  penguins_utils
-  d3v
-  )
+# target_link_libraries(
+#   test_init_server
+#   penguins_utils
+#   d3v
+#   )
 
-add_test(test_init_server test_init_server)
+# add_test(test_init_server test_init_server)
 

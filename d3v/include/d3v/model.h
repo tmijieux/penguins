@@ -1,7 +1,8 @@
 #ifndef D3V_MODEL_H
 #define D3V_MODEL_H
 
-#include <utils/symbol_visibility.h>
+#include <stdlib.h> // for size_t
+#include "utils/symbol_visibility.h"
 
 struct model;
 typedef struct model model_t;

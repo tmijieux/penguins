@@ -1,8 +1,4 @@
-
-include_directories(
-  ../include
-  ../game/include
-  )
+add_subdirectory(coords)
 
 ### maps:
 add_library(map_square MODULE map_square.c)
@@ -16,13 +12,11 @@ add_library(map_penrose
   penrose/penrose.h
   )
 
-target_link_libraries(map_square penguins_utils)
-target_link_libraries(map_hexagon penguins_utils)
-target_link_libraries(map_triangle penguins_utils)
-target_link_libraries(map_octogon penguins_utils)
-target_link_libraries(map_penrose penguins_utils)
-
-
+target_link_libraries(map_square penguins_utils penguins_module_interface penguins_mapcoord)
+target_link_libraries(map_hexagon penguins_utils penguins_module_interface penguins_mapcoord)
+target_link_libraries(map_triangle penguins_utils penguins_module_interface penguins_mapcoord)
+target_link_libraries(map_octogon penguins_utils penguins_module_interface penguins_mapcoord)
+target_link_libraries(map_penrose penguins_utils penguins_module_interface penguins_mapcoord)
 
 install(TARGETS map_square DESTINATION penguins/map)
 install(TARGETS map_hexagon DESTINATION penguins/map)

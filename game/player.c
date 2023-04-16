@@ -6,9 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <server/client.h>
-#include <server/player.h>
-#include <utils/log.h>
+#include "utils/log.h"
+#include "server/client.h"
+#include "server/player.h"
+#include "display/mouseclick.h"
+#include "penguins/game_interface.h"
 
 static int player_count = 0;
 static int *score = NULL;
@@ -21,7 +23,7 @@ static int *penguin_count = NULL;
 static void player_init_score(void)
 {
     for (int i = 0; i < player_count; i++) {
-	score[i] = 0;
+        score[i] = 0;
     }
 }
 
@@ -33,18 +35,18 @@ void player_module_init(void)
     client_module_init();
     player_count = client_get_client_count();
     if (score == NULL) {
-	score = calloc(player_count, sizeof(*score));
+        score = calloc(player_count, sizeof(*score));
     } else {
-	player_init_score();
+        player_init_score();
     }
     if (penguin_count == NULL) {
-	penguin_count = calloc(player_count, sizeof(*penguin_count));
+        penguin_count = calloc(player_count, sizeof(*penguin_count));
     }
     if (state == NULL) {
-	state = malloc(player_count * sizeof(*state));
+        state = malloc(player_count * sizeof(state[0]));
     }
     for (int i = 0; i < player_count; i++) {
-	state[i] = 1;
+        state[i] = 1;
     }
 }
 
@@ -78,9 +80,12 @@ int player_get_player_count(void)
  * @param player - Identifiant du joueur.
  * @return int - Score du joueur.
  */
-int player_get_player_score(int player)
+int player_get_player_score(int player_id)
 {
-    return score[player];
+    if (player_id < 0 || score == NULL) {
+        return -1;
+    }
+    return score[player_id];
 }
 
 /**
@@ -146,7 +151,23 @@ int player_place_penguin(int player_id)
 void player_init_player(int player_id, int nb_tile)
 {
     Client *cli = client_get(player_id);
-    cli->methods.init(nb_tile);
+
+    game_methods_t game_methods = {
+        .get_current_player_id = &game__get_current_player_id,
+        .move_is_valid = &game__move_is_valid,
+        .set_move = &move__set,
+        .get_tile_nb_fishes = &tile__get_fishes,
+        .get_tile_neighbours = &tile__get_neighbour,
+        .get_tile_neighbours_count = &tile__get_neighbour_count,
+        .get_tile_player = &tile__get_player,
+        .get_tile_nb_direction = &tile__nb_direction,
+        
+        .get_nb_player = game__get_nb_player,
+        .get_nb_penguin_player = &game__get_nb_penguin_player,
+        
+        .get_mouseclick_from_display = &display_mc_get,
+    };
+    cli->methods.init(nb_tile, &game_methods);
 }
 
 /**
@@ -158,7 +179,7 @@ void player_init_player(int player_id, int nb_tile)
  * pingouin.
  */
 void player_send_diff(enum diff_type dt, int player_id,
-		      int orig, int dest)
+              int orig, int dest)
 {
     Client *cli = client_get(player_id);
     cli->methods.send_diff(dt, orig, dest);
@@ -191,11 +212,12 @@ void player_remove_penguin(int player, int place_phase)
 {
     penguin_count[player] --;
     if (penguin_count[player] <= 0 && !place_phase) {
-	if (!player_can_play(player))
-	    return;
-	player_kick_player(player);
-	log_print(INFO_LOG__, "player %d kicked because "
-		  "he/she has no penguins left\n", player);
+        if (!player_can_play(player)) {
+            return;
+        }
+        player_kick_player(player);
+        log_print(INFO_LOG__, "player %d kicked because "
+          "he/she has no penguins left\n", player);
     }
 }
 
@@ -207,16 +229,17 @@ int player_get_winner(void)
 {
     int winner = -1, max_score = -1;
     for (int i = 0; i < player_count; i++) {
-	if (score[i] > max_score) {
-	    winner = i;
-	    max_score = score[i];
-	}
+        if (score[i] > max_score) {
+            winner = i;
+            max_score = score[i];
+        }
     }
     return winner;
 }
 
 
-int cmp(const void* A, const void* B) {
+int cmp(const void* A, const void* B) 
+{
     const int *a = A;
     const int *b = B;
     return *a < *b;

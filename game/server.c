@@ -1,10 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <unistd.h>
 #include <limits.h>
+#ifdef _WIN32
+# define sleep(x) Sleep( (int)((x) * 1000))
+#else
+# include <unistd.h> // for sleep
+#endif
 
-#include "game_interface.h"
+
+#include "penguins/game_interface.h"
 #include "server/server.h"
 #include "server/player.h"
 #include "server/move_impl.h"
@@ -32,13 +37,13 @@ __internal int move_is_valid_aux(int tile, int direction, int nb_move)
     // arguments valides
     if (tile < 0
         || tile > Game.nb_tile
-	|| nb_move >= Game.nb_tile) {
-	return -1;
+    || nb_move >= Game.nb_tile) {
+    return -1;
     }
     if (nb_move < 1 || direction < 0) {
-	log_print(NEVER_LOG__, "invalid direction %d or nb_jump %d\n",
-		  direction, nb_move);
-	return -1;
+    log_print(NEVER_LOG__, "invalid direction %d or nb_jump %d\n",
+          direction, nb_move);
+    return -1;
     }
 
     int dim = Game.nb_dimension;
@@ -46,14 +51,14 @@ __internal int move_is_valid_aux(int tile, int direction, int nb_move)
     struct graph *g = Game.tile_graph;
     int dest = -1;
     while (nb_move--) {
-	dest = map.get_id_from_move(tile, &direction, dim, tc, g);
-	if (dest != -1 &&
-	    graph_has_edge(g, tile, dest) &&
-	    graph_get_player_id(g, dest) < 0 &&
-	    graph_get_nb_fish(g, dest) > 0) {
-	    tile = dest;
-	} else {
-	    return -1;
+    dest = map.get_id_from_move(tile, &direction, dim, tc, g);
+    if (dest != -1 &&
+        graph_has_edge(g, tile, dest) &&
+        graph_get_player_id(g, dest) < 0 &&
+        graph_get_nb_fish(g, dest) > 0) {
+        tile = dest;
+    } else {
+        return -1;
         }
     }
     return dest;
@@ -77,11 +82,11 @@ int game__move_is_valid(int tile, int direction, int nb_move)
     // le joueur est bien la ou il prétend etre:
     /*int player = graph_get_player_id(Game.tile_graph, tile);
     if (player != Game.current_player_id) {
-    	log_print(DEBUG_LOG__, "Debug: invalid origin %d,"
-		  " player %d at line %d in %s\n",
-		  tile, Game.current_player_id,
-		  __LINE__, __func__);
-    	return -1;
+        log_print(DEBUG_LOG__, "Debug: invalid origin %d,"
+          " player %d at line %d in %s\n",
+          tile, Game.current_player_id,
+          __LINE__, __func__);
+        return -1;
     }*/
     return move_is_valid_aux(tile, direction, nb_move);
 }
@@ -161,18 +166,18 @@ int server_get_winner(void)
 static void server_compute_neighbours(void)
 {
     for (int i = 0; i < Game.nb_tile; i++) {
-	size_t s = graph_edge_count(Game.tile_graph, i);
-	log_print(DEBUG_LOG__, "compute neighbours %d\nedge: %zu\n", i, s);
-	int *neighbours = malloc(s * sizeof(*neighbours));
-	struct successor_iterator *si = graph_get_successor_iterator(Game.tile_graph, i);
-	int j = 0;
-	for (iterator_begin(si); !iterator_end(si); iterator_next(si)) {
-	    neighbours[j] = iterator_value(si);
-	    j++;
-	}
-	successor_iterator_free(si);
-	graph_set_neighbours(Game.tile_graph, i, neighbours);
-	log_print(DEBUG_LOG__, "compute neighbours %d  __ END\n\n", i);
+        size_t s = graph_edge_count(Game.tile_graph, i);
+        log_print(DEBUG_LOG__, "compute neighbours %d\nedge: %zu\n", i, s);
+        int *neighbours = malloc(s * sizeof(*neighbours));
+        struct successor_iterator *si = graph_get_successor_iterator(Game.tile_graph, i);
+        int j = 0;
+        for (iterator_begin(si); !iterator_end(si); iterator_next(si)) {
+            neighbours[j] = iterator_value(si);
+            j++;
+        }
+        successor_iterator_free(si);
+        graph_set_neighbours(Game.tile_graph, i, neighbours);
+        log_print(DEBUG_LOG__, "compute neighbours %d  __ END\n\n", i);
     }
 }
 
@@ -180,24 +185,24 @@ int assign_fishes(int nb_tile, int max_fish, struct graph *graph)
 {
     int fish1_count = 0;
     for (int i = 0; i < nb_tile; i++) {
-	int fish = rand() % max_fish + 1;
-	graph_set_nb_fish(Game.tile_graph, i, fish);
-	if (fish == 1) {
-	    fish1_count++;
+    int fish = rand() % max_fish + 1;
+    graph_set_nb_fish(Game.tile_graph, i, fish);
+    if (fish == 1) {
+        fish1_count++;
         }
     }
 
     int nb_penguin = PENGUINS_PER_CLIENT * player_get_player_count();
     if (nb_tile < nb_penguin) {
-	fprintf(stderr, "Not enough tile: %d penguins\n", nb_penguin);
-	exit(EXIT_FAILURE);
+    fprintf(stderr, "Not enough tile: %d penguins\n", nb_penguin);
+    exit(EXIT_FAILURE);
     }
     while (fish1_count < nb_penguin) {
-	int tile = rand() % nb_tile;
-	if (graph_get_nb_fish(Game.tile_graph, tile) != 1) {
-	    graph_set_nb_fish(Game.tile_graph, tile, 1);
-	    fish1_count++;
-	}
+    int tile = rand() % nb_tile;
+    if (graph_get_nb_fish(Game.tile_graph, tile) != 1) {
+        graph_set_nb_fish(Game.tile_graph, tile, 1);
+        fish1_count++;
+    }
     }
 
     return nb_penguin;
@@ -230,7 +235,11 @@ void server_init(
 
     map_module_load(map_module_name);
     printf("initializing map\n");
-    map.init_graph(nb_dimension, nb_tile, Game.tile_graph);
+    display_methods_t dmethods = {
+        .register_texture = &display_register_texture,
+        .register_model = &display_register_model,
+    };
+    map.init_graph(nb_dimension, nb_tile, Game.tile_graph, &dmethods);
     printf("map initialized.\n");
 
     log_print(DEBUG_LOG__, "server init __ END\n");
@@ -251,11 +260,11 @@ void server_init(
 void server_exit(void)
 {
     for (int i = 0; i < Game.nb_tile; i++) {
-	free(graph_get_neighbours(Game.tile_graph, i));
+        free(graph_get_neighbours(Game.tile_graph, i));
     }
     #ifdef USE_GL_DISPLAY__
     if (Game.nb_dimension >= 1 && Game.nb_dimension <= 3) {
-	join_display_thread();
+        join_display_thread();
     }
     #endif
     map_module_unload();
@@ -276,8 +285,8 @@ int server_game_end(void)
     int pl_count = player_get_player_count();
     for (int player = 0; player < pl_count; player++)
     {
-	if (player_can_play(player)) {
-	    return 0;
+        if (player_can_play(player)) {
+            return 0;
         }
     }
     return 1;
@@ -294,13 +303,13 @@ static int server_tile_is_isolated(int tile)
     int isolated = 1;
     struct successor_iterator *vsi = graph_get_successor_iterator(Game.tile_graph, tile);
     for (iterator_begin(vsi); !iterator_end(vsi); iterator_next(vsi)) {
-	int neighbour = iterator_value(vsi);
-	int nb_fish = graph_get_nb_fish(Game.tile_graph, neighbour);
-	int player_id = graph_get_player_id(Game.tile_graph, neighbour);
-	if (nb_fish > 0 && player_id < 0) {
-	    isolated = 0;// Si il reste un voisin vide, la tuile n'est
-	    break;       // pas bloquée.
-	}
+        int neighbour = iterator_value(vsi);
+        int nb_fish = graph_get_nb_fish(Game.tile_graph, neighbour);
+        int player_id = graph_get_player_id(Game.tile_graph, neighbour);
+        if (nb_fish > 0 && player_id < 0) {
+            isolated = 0;// Si il reste un voisin vide, la tuile n'est
+            break;       // pas bloquée.
+        }
     }
     successor_iterator_free(vsi);
     return isolated;
@@ -325,13 +334,13 @@ static int has_distributed_all_penguins(void)
 void server_update_tile(int tile)
 {
     if (server_tile_is_isolated(tile)) {
-	int fish = graph_get_nb_fish(Game.tile_graph, tile);
-	int player_id = graph_get_player_id(Game.tile_graph, tile);
-	if (player_id > -1 && fish > 0) {
-	    graph_set_nb_fish(Game.tile_graph, tile, -1);
-	    player_score_add(player_id, fish);
-	    player_remove_penguin(player_id, Game.is_place_phase);
-	}
+        int fish = graph_get_nb_fish(Game.tile_graph, tile);
+        int player_id = graph_get_player_id(Game.tile_graph, tile);
+        if (player_id > -1 && fish > 0) {
+            graph_set_nb_fish(Game.tile_graph, tile, -1);
+            player_score_add(player_id, fish);
+            player_remove_penguin(player_id, Game.is_place_phase);
+        }
     }
 }
 
@@ -344,7 +353,7 @@ void server_update_nearby_tiles(int tile)
 {
     struct successor_iterator *vsi = graph_get_successor_iterator(Game.tile_graph, tile);
     for (iterator_begin(vsi); !iterator_end(vsi); iterator_next(vsi)) {
-	server_update_tile(iterator_value(vsi)); // each neighbour is updated
+        server_update_tile(iterator_value(vsi)); // each neighbour is updated
     }
     successor_iterator_free(vsi);
 }
@@ -357,8 +366,8 @@ void server_init_all_clients(int nb_player)
 {
     server_compute_neighbours();
     for (int i = 0; i < nb_player; i++){
-	Game.current_player_id = i;
-	player_init_player(i, Game.nb_tile);
+        Game.current_player_id = i;
+        player_init_player(i, Game.nb_tile);
     }
 }
 
@@ -369,37 +378,39 @@ void server_init_all_clients(int nb_player)
 void server_place_penguins(int first_player_id, int nb_player)
 {
     int player_id = first_player_id;
+
     while (!has_distributed_all_penguins())
     {
-	Game.nb_distributed_penguins++;
-	if (!player_can_play(player_id)) {
-	    player_id = (player_id + 1) % nb_player;
-	    continue;
-	}
-	Game.current_player_id = player_id;
-	int tile_id = player_place_penguin(player_id);
-	if (tile_id >= 0
-            && graph_get_player_id(Game.tile_graph, tile_id) < 0
-            && graph_get_nb_fish(Game.tile_graph, tile_id) == 1)
+        Game.nb_distributed_penguins++;
+        if (!player_can_play(player_id)) {
+            player_id = (player_id + 1) % nb_player;
+            continue;
+        }
+        Game.current_player_id = player_id;
+        printf("about to call player_place_penguin !! for player=%d\n", player_id);
+        int tile_id = player_place_penguin(player_id);
+        if (tile_id >= 0
+                && graph_get_player_id(Game.tile_graph, tile_id) < 0
+                && graph_get_nb_fish(Game.tile_graph, tile_id) == 1)
         {
-	    graph_set_player_id(Game.tile_graph, tile_id, player_id);
-	    log_print(INFO_LOG__, "player %d place penguin "
-		      "on tile %d\n", player_id, tile_id);
-	    for (int i = 0; i < nb_player; i++) {
-		player_send_diff(PENGUIN_PLACE, i, tile_id, -1);
+            graph_set_player_id(Game.tile_graph, tile_id, player_id);
+            log_print(INFO_LOG__, "player %d place penguin "
+                  "on tile %d\n", player_id, tile_id);
+            for (int i = 0; i < nb_player; i++) {
+                player_send_diff(PENGUIN_PLACE, i, tile_id, -1);
             }
-	    server_update_tile(tile_id);
-	    server_update_nearby_tiles(tile_id);
-
+            server_update_tile(tile_id);
+            server_update_nearby_tiles(tile_id);
+        
             if (Game.is_using_display) {
                 display_add_penguin(tile_id, player_id);
             }
-	} else {
-	    player_kick_player(player_id);
-	    log_print(INFO_LOG__, "player %d kicked for "
-		      "invalid penguin place on tile %d\n", player_id, tile_id);
-	}
-	player_id = (player_id + 1) % nb_player;
+        } else {
+            player_kick_player(player_id);
+            log_print(INFO_LOG__, "player %d kicked for "
+                  "invalid penguin place on tile %d\n", player_id, tile_id);
+        }
+        player_id = (player_id + 1) % nb_player;
     }
 }
 
@@ -416,51 +427,50 @@ void server_game(int first_player_id, int nb_player)
 
     while (!server_game_end())
     {
-
-	if (!player_can_play(player_id)) {
-	    player_id = (player_id + 1) % nb_player;
-	    continue;
-	}
-
+        if (!player_can_play(player_id)) {
+            player_id = (player_id + 1) % nb_player;
+            continue;
+        }
+        
         fprintf(stderr, "It's player %d turn...\n", player_id);
-
-	Game.current_player_id = player_id;
-	struct move client_move;
-	player_play(player_id, &client_move);
-	int orig = move__get_orig(&client_move);
-	int dest = move_is_valid_aux(
-            orig,
-            move__get_direction(&client_move),
-            move__get_nb_jump(&client_move)
-        );
-	if (dest < 0) {
-	    player_kick_player(player_id);
-	    player_score_reset(player_id);
-	    log_print(INFO_LOG__, "player %d kicked for invalid move\n", player_id);
-	} else {
-	    // handle fish
-	    int nb_fish = graph_get_nb_fish(Game.tile_graph, orig);
-	    player_score_add(player_id, nb_fish);
-	    graph_set_nb_fish(Game.tile_graph, orig, -1);
-	    // move the player
-	    graph_set_player_id(Game.tile_graph, orig, -1);
-	    graph_set_player_id(Game.tile_graph, dest, player_id);
-
-            if (Game.is_using_display) {
-	        display_add_move(orig, dest);
-            }
-
-	    log_print(INFO_LOG__, "player %d captured tile %d: +%d\n",
-		      player_id, dest, nb_fish);
-	    // inform all the player of the move
-	    for (int i = 0; i < nb_player; i++) {
-		player_send_diff(MOVE, i, orig, dest);
-            }
-	    server_update_tile(dest);
-	    server_update_nearby_tiles(orig);
-	    server_update_nearby_tiles(dest);
-	}
-	player_id = (player_id + 1) % nb_player;
+        
+        Game.current_player_id = player_id;
+        struct move client_move;
+        player_play(player_id, &client_move);
+        int orig = move__get_orig(&client_move);
+        int dest = move_is_valid_aux(
+                orig,
+                move__get_direction(&client_move),
+                move__get_nb_jump(&client_move)
+            );
+        if (dest < 0) {
+            player_kick_player(player_id);
+            player_score_reset(player_id);
+            log_print(INFO_LOG__, "player %d kicked for invalid move\n", player_id);
+        } else {
+            // handle fish
+            int nb_fish = graph_get_nb_fish(Game.tile_graph, orig);
+            player_score_add(player_id, nb_fish);
+            graph_set_nb_fish(Game.tile_graph, orig, -1);
+            // move the player
+            graph_set_player_id(Game.tile_graph, orig, -1);
+            graph_set_player_id(Game.tile_graph, dest, player_id);
+        
+                if (Game.is_using_display) {
+                display_add_move(orig, dest);
+                }
+        
+            log_print(INFO_LOG__, "player %d captured tile %d: +%d\n",
+                  player_id, dest, nb_fish);
+            // inform all the player of the move
+            for (int i = 0; i < nb_player; i++) {
+            player_send_diff(MOVE, i, orig, dest);
+                }
+            server_update_tile(dest);
+            server_update_nearby_tiles(orig);
+            server_update_nearby_tiles(dest);
+        }
+        player_id = (player_id + 1) % nb_player;
     }
 }
 
@@ -472,16 +482,26 @@ void server_run()
 {
     int nb_player = player_get_player_count();
     server_init_all_clients(nb_player);
+    if (nb_player == 0) {
+        printf("Sadly, no players have joined the game");
+        printf("This may be because of a problem.");
+        printf("Ensure the player module are loading correctly.");
+        return;
+    }
 
     Game.is_place_phase = 1;
 
     fprintf(stderr, "Players are placing penguins...\n");
     if (Game.is_using_display) {
+        printf("waiting for display to be ready\n");
+
         // TODO replace this with a mutex and condition
         while (!Display.thread_running) {
             sleep(1.0/60.0);
         }
     }
+    printf("Display is ready\n");
+
     int first_player_id = rand() % nb_player;
     printf("first_player_id=%d\n", first_player_id);
     server_place_penguins(first_player_id, nb_player);
@@ -490,15 +510,14 @@ void server_run()
     Game.is_place_phase = 0;
 
     for (int i = 0; i < nb_player; i++) {
-	if (!player_can_play(i)) {
-	    continue;
+        if (!player_can_play(i)) {
+            continue;
         }
-
         if (player_get_penguin_count(i) <= 0) {
-	    player_kick_player(i);
-	    log_print(INFO_LOG__, "player %d kicked because "
-		      "he/she has no penguins left\n", i);
-	}
+            player_kick_player(i);
+            log_print(INFO_LOG__, "player %d kicked because "
+                  "he/she has no penguins left\n", i);
+        }
     }
 
     server_game(first_player_id, nb_player);

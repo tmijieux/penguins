@@ -74,7 +74,7 @@ void anim_init_vec3(vec3 * v)
 int anim_prepare(void)
 {
     if (animator.addLocked || animator.size == animator.capacity) {
-	return 0;
+        return 0;
     }
     animator.animationLocked = 1;
     return 1;
@@ -99,7 +99,7 @@ void anim_launch(void)
 int anim_new_movement(void *obj, int type, int total)
 {
     if (!animator.animationLocked) {
-	return 0;
+        return 0;
     }
     int s = animator.size;
     struct animation *anim = &animator.animations[s];
@@ -128,7 +128,7 @@ int anim_new_movement(void *obj, int type, int total)
 int anim_set_translation(vec3 dest)
 {
     if (!animator.animationLocked) {
-	return 0;
+        return 0;
     }
 
     int s = animator.size;
@@ -154,17 +154,17 @@ int anim_set_translation(vec3 dest)
 int anim_set_rotation(float dest)
 {
     if (!animator.animationLocked) {
-	return 0;
+        return 0;
     }
     int s = animator.size;
     struct animation *animation = &(animator.animations[s]);
     if (dest > 360) {
-	vec3 peng_pos;
-	d3v_object_get_position(animation->obj, &peng_pos);
-	animation->rot = (360.0 * (animation->transDest.y - peng_pos.y) / animation->total_move);
-	dest = d3v_object_get_orientationY(animation->obj);
+        vec3 peng_pos;
+        d3v_object_get_position(animation->obj, &peng_pos);
+        animation->rot = (360.0 * (animation->transDest.y - peng_pos.y) / animation->total_move);
+        dest = d3v_object_get_orientationY(animation->obj);
     } else {
-	animation->rot = (dest - d3v_object_get_orientationY(animation->obj))  / animation->total_move;
+        animation->rot = (dest - d3v_object_get_orientationY(animation->obj))  / animation->total_move;
     }
 
     animation->rotDest = dest;
@@ -180,7 +180,7 @@ int anim_set_rotation(float dest)
 int anim_set_hide(int hide)
 {
     if (!animator.animationLocked) {
-	return 0;
+        return 0;
     }
 
     animator.animations[animator.size].hide = hide;
@@ -194,81 +194,76 @@ int anim_set_hide(int hide)
 int anim_push_movement(void)
 {
     if (!animator.animationLocked) {
-	return 0;
+        return 0;
     }
-
     animator.size++;
     return 1;
 }
 
 /**
  * Exécuter l'animation courrante.
- * @return int - 1 S'il reste des animations à exécuter.
+ * @return int - 1 S'il reste des animations à exécuter. 0 si l'animation est terminé.
  */
 int anim_run(void)
 {
     if (animator.animationLocked || animator.pos == animator.size) {
-	return 0;
+        return 0;
     }
 
     animator.addLocked = 1;
     struct animation *anim = &animator.animations[animator.pos];
     if (anim->type == 0)
     {
-	if (anim->hide == 1) {
-	    d3v_object_hide(anim->obj);
-        } else if (anim->hide == 0) {
-	    d3v_object_reveal(anim->obj);
-        }
-
-	if (anim->doTrans) {
-	    vec3 pen_pos;
-	    d3v_object_get_position(anim->obj, &pen_pos);
-	    vec3 dest = {
-		pen_pos.x + anim->trans.x,
-		pen_pos.y + anim->trans.y,
-		pen_pos.z + anim->trans.z
-	    };
-
-	    d3v_object_set_position(anim->obj, dest);
-	}
-
-	if (anim->doRot) {
-	    float rot = d3v_object_get_orientationY(anim->obj) + anim->rot;
-	    d3v_object_set_orientationY(anim->obj, rot);
-	}
-
-	++anim->current_move;
-	if (anim->current_move >= anim->total_move)
-        {
-	    if (anim->doTrans) {
-		d3v_object_set_position(anim->obj, anim->transDest);
-            }
-	    if (anim->doRot) {
-		d3v_object_set_orientationY(anim->obj, anim->rotDest);
-            }
-	}
-
-    } else if (anim->type == 1) {
-
         if (anim->hide == 1) {
-	    d3v_object_hide(anim->obj);
-        }
-	else if (anim->hide == 0) {
-	    d3v_object_reveal(anim->obj);
+            d3v_object_hide(anim->obj);
+        } else if (anim->hide == 0) {
+            d3v_object_reveal(anim->obj);
         }
 
-	++anim->current_move;
+        if (anim->doTrans) {
+            vec3 pen_pos;
+            d3v_object_get_position(anim->obj, &pen_pos);
+            vec3 dest = {
+                pen_pos.x + anim->trans.x,
+                pen_pos.y + anim->trans.y,
+                pen_pos.z + anim->trans.z
+            };
+            d3v_object_set_position(anim->obj, dest);
+        }
+
+        if (anim->doRot) {
+            float rot = d3v_object_get_orientationY(anim->obj) + anim->rot;
+            d3v_object_set_orientationY(anim->obj, rot);
+        }
+
+        ++anim->current_move;
+        if (anim->current_move >= anim->total_move)
+        {
+            if (anim->doTrans) {
+                d3v_object_set_position(anim->obj, anim->transDest);
+            }
+            if (anim->doRot) {
+                d3v_object_set_orientationY(anim->obj, anim->rotDest);
+            }
+        }
+    } else if (anim->type == 1) {
+        if (anim->hide == 1) {
+            d3v_object_hide(anim->obj);
+        }
+        else if (anim->hide == 0) {
+            d3v_object_reveal(anim->obj);
+        }
+        ++anim->current_move;
     }
 
     if (anim->current_move >= anim->total_move) {
-	++animator.pos;
-	if (animator.pos == animator.size) {
-	    animator.pos = 0;
-	    animator.size = 0;
-	    animator.addLocked = 0;
-	    return 0;
-	}
+        ++animator.pos;
+        if (animator.pos == animator.size) {
+            animator.pos = 0;
+            animator.size = 0;
+            animator.addLocked = 0;
+            return 0;
+        }
     }
     d3v_request_animation_frame();
     return 1;

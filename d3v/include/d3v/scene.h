@@ -3,30 +3,29 @@
 
 #include "utils/vec.h"
 #include "utils/symbol_visibility.h"
-#include "d3v/d3v.h"
+#include "d3v/user_callback.h"
 #include "d3v/camera.h"
 #include "d3v/object.h"
+#include "d3v/light.h"
 
-
-struct scene {
+typedef struct scene {
     int key;
     // variables de la souris
     int button, xold, yold;
 
     camera_t *camera;
-    struct light *light;
+    light_t *light;
 
-    struct object **object_buf;
+    object_t **object_buf;
     int object_count;
 
     vec3 first_look;
 
-    void (*exit_callback)(void);
-    void (*draw_callback)(void);
-    void (*mouse_callback)(int,int,int,int);
-    void (*key_input_callback)(int,int,int);
-};
-typedef struct scene scene_t;
+    exit_callback_t exit_callback;
+    draw_callback_t draw_callback;
+    mouse_callback_t mouse_callback;
+    key_input_callback_t key_input_callback;
+} scene_t;
 
 __internal extern scene_t scene;
 

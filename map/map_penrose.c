@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "server/map.h"
-#include "display/display.h"
+#include "coord.h"
+#include "penguins/map_interface.h"
 
 #include "./penrose/penrose.h"
 
@@ -17,52 +17,51 @@
  * @param nb_tile - Nombre de tuiles.
  * @param graph - Graphe du jeu.
  */
-static void init_graph(int dimension, int nb_tile, struct graph *graph)
+static void init_graph(int dimension, int nb_tile, struct graph *graph, display_methods_t *display)
 {
     if (dimension <= 1) {
-	fprintf(stderr, "map_init_graph: Error, map_penrose "
-	       "can't be loaded with dimension lower than 2\n");
-	exit(EXIT_FAILURE);
+        fprintf(stderr, "map_init_graph: Error, map_penrose "
+                "can't be loaded with dimension lower than 2\n");
+        exit(EXIT_FAILURE);
     }
     penrose_init(nb_tile, dimension);
     int surface = penrose_get_surface();
     int layer = penrose_get_layer();
-    #ifdef USE_GL_DISPLAY__
+
     float coord[3];
     int tex = -1;
     int acute_model = -1;
     int obtuse_model = -1;
     if (dimension <= 3) {
-        tex = display_register_texture("textures/glace.jpg");
-        acute_model = display_register_model("models/wavefront/acute_tile.obj");
-	obtuse_model = display_register_model("models/wavefront/obtuse_tile.obj");
+        tex = display->register_texture("textures/glace.jpg");
+        acute_model = display->register_model("models/wavefront/acute_tile.obj");
+        obtuse_model = display->register_model("models/wavefront/obtuse_tile.obj");
     }
-    #endif
     for (int i = 0; i < nb_tile; i++) {
         int dim = surface;
-	int neighbor;
-	int j = 0;
+        int neighbor;
+        int j = 0;
         do {
             neighbor = penrose_get_neighbor(i, j);
-	    if (neighbor != -1 && !graph_has_edge(graph, i, neighbor))
-		graph_add_edge(graph, i, neighbor);
-	    j++;
+            if (neighbor != -1 && !graph_has_edge(graph, i, neighbor))
+                graph_add_edge(graph, i, neighbor);
+            j++;
         } while (neighbor != -1 && j < 4);
 
-	for (j = 2; j < dimension; j++) {
-	    if (coord[j] + 0.5 < layer && i + dim < nb_tile)
-		graph_add_edge(graph, i, i + dim);
-	    dim *= layer;
-	}
+        for (j = 2; j < dimension; j++) {
+            if (coord[j] + 0.5 < layer && i + dim < nb_tile)
+                graph_add_edge(graph, i, i + dim);
+            dim *= layer;
+        }
 
 
-	penrose_get_coordinates_from_id(i, coord);
-	float angle = penrose_get_angle(i);
-	int type = penrose_get_type(i);
+        penrose_get_coordinates_from_id(i, coord);
+        float angle = penrose_get_angle(i);
+        int type = penrose_get_type(i);
         int model = type != 0 ? acute_model : obtuse_model;
 
         vdata_t data;
-	graph_get_data(graph, i, &data);
+        graph_get_data(graph, i, &data);
         data.model_id = model;
         data.texture_id = tex;
         data.angle = angle;
@@ -103,16 +102,16 @@ static int get_id_from_move(int origin, int *direction, int dimension,
     int dest = -1;
 
     if (*direction < 4) {
-	dest = penrose_get_id_from_move(origin, direction);
+        dest = penrose_get_id_from_move(origin, direction);
     } else if (*direction < dimension * 2) {
-	for (int i = 0; i < *direction / 2 - 2; i++) {
-	    dim *= layer;
-	}
-	dest = origin + dim * (1 - 2 * (*direction % 2));
+        for (int i = 0; i < *direction / 2 - 2; i++) {
+            dim *= layer;
+        }
+        dest = origin + dim * (1 - 2 * (*direction % 2));
     }
 
     if (dest < 0 || dest >= nb_tile)
-	dest = -1;
+        dest = -1;
     return dest;
 }
 

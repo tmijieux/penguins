@@ -2,7 +2,6 @@
 #include <stdio.h>
 
 #include "server/server.h"
-#include "server/path.h"
 
 #ifndef SERVER_INSTALL_PATH
 #error "test_init_server.c NEED const SERVER_INSTALL_PATH"
@@ -26,9 +25,7 @@ void test_init_server(void)
 
 int main(int argc, char *argv[])
 {
-    path_init(argv[0]);
     test_init_server();
-    path_exit();
     return EXIT_SUCCESS;
 }
 

@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "server/map.h"
-#include "server/coord.h"
+#include "utils/vec.h"
+#include "utils/graph.h"
 
-#include "display/display.h"
+#include "coord.h"
+#include "penguins/map_interface.h"
 
 static int length;
 
@@ -32,25 +33,23 @@ static inline int odd(int x)
  * @param nb_tile - Nombre de tuiles.
  * @param graph - Graphe du jeu.
  */
-static void init_graph(int dimension, int nb_tile, struct graph *graph)
+static void init_graph(int dimension, int nb_tile, struct graph *graph, display_methods_t *display)
 {
     int *coord = malloc(dimension * sizeof(int));
     length = coord_get_length_side(nb_tile, dimension);
-    #ifdef USE_GL_DISPLAY__
     int tex = -1;
     int octo_model = -1;
     int square_model = -1;
     if (dimension >= 1 && dimension <= 3) {
-	tex = display_register_texture("textures/glace.jpg");
-        square_model = display_register_model("models/wavefront/square_tile.obj");
-	octo_model = display_register_model("models/wavefront/octogon_tile.obj");
+        tex = display->register_texture("textures/glace.jpg");
+        square_model = display->register_model("models/wavefront/square_tile.obj");
+        octo_model = display->register_model("models/wavefront/octogon_tile.obj");
     }
-    #endif
     for (int i = 0; i < nb_tile; i++) {
-	int dim = 1;
-	coord_get_coordinates_from_id(i, nb_tile, length,
-				      dimension, coord);
-	int is_odd = odd(coord[0] + coord[1]);
+        int dim = 1;
+        coord_get_coordinates_from_id(i, nb_tile, length,
+                                      dimension, coord);
+        int is_odd = odd(coord[0] + coord[1]);
 
         for (int j = 0; j < dimension; j++) {
             if (coord[j] + 1 < length && i + dim < nb_tile) {
@@ -69,7 +68,7 @@ static void init_graph(int dimension, int nb_tile, struct graph *graph)
 
 
         vdata_t data;
-	graph_get_data(graph, i, &data);
+        graph_get_data(graph, i, &data);
         data.model_id = is_odd ? octo_model : square_model;
         data.texture_id = tex;
         data.angle = 0;
@@ -137,7 +136,7 @@ static int get_id_from_move(int origin, int *direction, int dimension,
         coord[1] += 1 - 2 * (diag_direction < 2);
         dest = coord_get_id_from_coordinates(coord, length, dimension);
     } else {
-	dest = -1;
+        dest = -1;
     }
 
     free(coord);

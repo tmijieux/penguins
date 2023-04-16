@@ -2,11 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "map_interface.h"
-
-#include "server/map.h"
-#include "server/coord.h"
-#include "display/display.h"
+#include "coord.h"
+#include "penguins/map_interface.h"
 
 static int length;
 
@@ -16,7 +13,7 @@ static int length;
  * @param nb_tile - Nombre de tuiles.
  * @param graph - Graphe du jeu.
  */
-static void init_graph(int dimension, int nb_tile, graph_t *graph)
+static void init_graph(int dimension, int nb_tile, graph_t *graph, display_methods_t *display)
 {
     int texture = -1;
     int model = -1;
@@ -24,35 +21,35 @@ static void init_graph(int dimension, int nb_tile, graph_t *graph)
     length = coord_get_length_side(nb_tile, dimension);
 
     if (dimension >= 1 && dimension <= 3) {
-	texture = display_register_texture("textures/glace.jpg");
-	model = display_register_model("models/wavefront/square_tile.obj");
+        texture = display->register_texture("textures/glace.jpg");
+        model = display->register_model("models/wavefront/square_tile.obj");
     }
 
     for (int i = 0; i < nb_tile; i++) {
-	int dim = 1;
-	coord_get_coordinates_from_id(i, nb_tile, length, dimension, coord);
+        int dim = 1;
+        coord_get_coordinates_from_id(i, nb_tile, length, dimension, coord);
 
-	for (int j = 0; j < dimension; j++) {
-	    if (coord[j] + 1 < length && i + dim < nb_tile) {
-		graph_add_edge(graph, i, i + dim);
+        for (int j = 0; j < dimension; j++) {
+            if (coord[j] + 1 < length && i + dim < nb_tile) {
+                graph_add_edge(graph, i, i + dim);
             }
-	    dim *= length;
-	}
+            dim *= length;
+        }
 
 
         vdata_t data;
-	graph_get_data(graph, i, &data);
+        graph_get_data(graph, i, &data);
         data.model_id = model;
         data.texture_id = texture;
         data.angle = 0;
         data.scale = 0.4;
 
-	switch (dimension) {
-	case 1: data.loc = (vec3) {0.0, 0.0, coord[0]};	          break;
-	case 2: data.loc = (vec3) {coord[1], 0., coord[0]};       break;
-	case 3: data.loc = (vec3) {coord[1], coord[2], coord[0]}; break;
-	default: break;
-	}
+        switch (dimension) {
+        case 1: data.loc = (vec3) {0.0, 0.0, coord[0]};           break;
+        case 2: data.loc = (vec3) {coord[1], 0., coord[0]};       break;
+        case 3: data.loc = (vec3) {coord[1], coord[2], coord[0]}; break;
+        default: break;
+        }
         graph_set_data(graph, i, &data);
     }
     free(coord);
@@ -88,11 +85,11 @@ static int get_id_from_move(int origin, int *direction, int dimension,
     int dest;
 
     if (*direction < dimension * 2) {
-	coord_get_coordinates_from_id(origin, nb_tile, length, dimension, coord);
-	coord[*direction / 2] += 1 - 2 * (*direction % 2);
-	dest = coord_get_id_from_coordinates(coord, length, dimension);
+        coord_get_coordinates_from_id(origin, nb_tile, length, dimension, coord);
+        coord[*direction / 2] += 1 - 2 * (*direction % 2);
+        dest = coord_get_id_from_coordinates(coord, length, dimension);
     } else
-	dest = -1;
+        dest = -1;
 
     free(coord);
     return dest;

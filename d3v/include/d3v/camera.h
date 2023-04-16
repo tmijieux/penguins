@@ -25,7 +25,7 @@ void d3v_camera_rotate(camera_t *c, int ar, int ay);
 int d3v_camera_update(camera_t *c);// return whether a draw is required
 
 // must be called once per shader ???
-void d3v_camera_draw(camera_t *c);
+void d3v_camera_draw(camera_t *c, int shader_program);
 
 void d3v_camera_get_view_matrix_d(camera_t *c, mat4d *view);
 void d3v_camera_get_proj_matrix_d(camera_t *c, mat4d *proj);

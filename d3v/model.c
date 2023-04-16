@@ -1,7 +1,6 @@
 /**
  * @file model.c
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,8 +8,7 @@
 #include <fcntl.h>
 #include <stddef.h>
 
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
+#include "penguins_opengl.h"
 
 #include "utils/vec.h"
 #include "d3v/model.h"
@@ -105,15 +103,10 @@ model_scan_wavefront(FILE *f, int *vertex_count, int *normal_count,
  * @param path - Chemin d'accès au fichier.
  * @return struct model * - Le modèle.
  */
-struct model *model_load_wavefront(const char *path)
+model_t *model_load_wavefront(const char *path)
 {
-    int fd = openat(_d3v_binary_dir, path, O_RDONLY);
-    if (fd == -1) {
-        perror(path);
-        exit(EXIT_FAILURE);
-    }
 
-    FILE *f = fdopen(fd, "r");
+    FILE *f = fopen(path, "r");
     if (f == NULL) {
         perror(path);
         exit(EXIT_FAILURE);
@@ -140,7 +133,8 @@ struct model *model_load_wavefront(const char *path)
     nb_normal = nb_texcoord = nb_vertices = face_count = 0;
     char line[LINE_SIZE];
     while (fgets(line, LINE_SIZE, f) != NULL) {
-	char *line_header = strndup(line, 2);
+        char line_header[10] = { 0 };
+        strncpy(line_header, line, 2);
 	if (strcmp(line_header, "v ") == 0) {
 	    struct vec3 *p = &vertex[nb_vertices++];
 	    sscanf(&line[2], "%f %f %f\n", &p->x, &p->y, &p->z);
@@ -175,7 +169,6 @@ struct model *model_load_wavefront(const char *path)
 		       &vertex_index[k+2], &normal_index[k+2]);
 	    }
 	}
-	free(line_header);
     }
     fclose(f);
 

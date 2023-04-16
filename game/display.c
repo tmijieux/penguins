@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include <math.h>
 
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GLFW/glfw3.h>
+#ifdef __unix__
+# include <pthread.h>
+#else
+# include <Windows.h>
+#endif
+
+#include "penguins_opengl.h"
 
 #include "display/display.h"
 #include "display/display_internal.h"
@@ -28,14 +31,32 @@
 #include "utils/list.h"
 
 #define PENGUIN_FILE "models/wavefront/penguin.obj"
+#define MAX_ADD_PENGUIN_JOB 50
+typedef struct penguin_add_job {
+    int tileid;
+    int playerid;
+} penguin_add_job_t;
+int nb_pending_add_penguin_job = 0;
+penguin_add_job_t penguin_add_jobs[MAX_ADD_PENGUIN_JOB];
+
+
 
 /**
  * Gestion du thread.
  */
 struct _display_thread {
+    #ifdef __unix__
     pthread_t t;
     pthread_attr_t attr;
     pthread_mutex_t m;
+    pthread_mutex_t penguin_add_mutex;
+    #else
+    HANDLE t;
+    DWORD ThreadId;
+    CRITICAL_SECTION m;
+    CRITICAL_SECTION penguin_add_mutex;
+
+    #endif
 };
 static struct _display_thread display_thread;
 
@@ -56,67 +77,67 @@ enum SENS {
 static void display_schedule_animations(enum SENS s)
 {
     int tileSrc = (s == S_FORWARD) ? record_get_current_src(Display.records)
-	: record_get_rewind_src(Display.records);
+        : record_get_rewind_src(Display.records);
     int tileDest = (s == S_FORWARD) ? record_get_current_dest(Display.records)
-	: record_get_rewind_dest(Display.records);
+        : record_get_rewind_dest(Display.records);
 
     int setPenguin = (tileSrc == -1);
     if (setPenguin) {
-	tileSrc = tileDest;
+        tileSrc = tileDest;
     }
 
     int penguin = Display.tile_penguins_id[tileSrc];
 
     if (!setPenguin) {
-	setPenguin = (tileDest == -1 && s == S_REWIND);
+        setPenguin = (tileDest == -1 && s == S_REWIND);
     }
     if (setPenguin && penguin != -1) {
-	if (anim_prepare()) {
-	    anim_new_movement(Display.penguin_objects[penguin], 0, 1);
-	    anim_set_hide(s != S_FORWARD);
-	    anim_push_movement();
-	    anim_launch();
-	}
+        if (anim_prepare()) {
+            anim_new_movement(Display.penguin_objects[penguin], 0, 1);
+            anim_set_hide(s != S_FORWARD);
+            anim_push_movement();
+            anim_launch();
+        }
     } else {
         // Calculer le déplacement
-	if (anim_prepare()) {
-	    if (penguin != -1) {
-		vec3 tile_pos;
+        if (anim_prepare()) {
+            if (penguin != -1) {
+                vec3 tile_pos;
                 vec3 pen_pos;
 
-		d3v_object_get_position(Display.tile_objects[tileDest], &tile_pos);
-		d3v_object_get_position(Display.penguin_objects[penguin], &pen_pos);
+                d3v_object_get_position(Display.tile_objects[tileDest], &tile_pos);
+                d3v_object_get_position(Display.penguin_objects[penguin], &pen_pos);
 
-		float angle = angle_rotation_pingouin(&pen_pos, &tile_pos);
-		int nb_move = NB_MOVE;
-		if(angle <= 360) {
-		    nb_move = NB_MOVE / 2;
+                float angle = angle_rotation_pingouin(&pen_pos, &tile_pos);
+                int nb_move = NB_MOVE;
+                if(angle <= 360) {
+                    nb_move = NB_MOVE / 2;
                 }
 
-		anim_new_movement(Display.penguin_objects[penguin], 0, nb_move);
-		if (angle > 360) {
-		    anim_set_translation(tile_pos);
+                anim_new_movement(Display.penguin_objects[penguin], 0, nb_move);
+                if (angle > 360) {
+                    anim_set_translation(tile_pos);
                 }
-		anim_set_rotation(angle);
+                anim_set_rotation(angle);
 
-		if (angle <= 360) {
-		    anim_push_movement();
-		    anim_new_movement(Display.penguin_objects[penguin], 0, NB_MOVE);
-		    anim_set_translation(tile_pos);
-		}
-		anim_push_movement();
-	    }
-	    int tile = -1;
-	    if (s == S_FORWARD) {
-		tile = tileSrc;
-            } else {
-		tile = tileDest;
+                if (angle <= 360) {
+                    anim_push_movement();
+                    anim_new_movement(Display.penguin_objects[penguin], 0, NB_MOVE);
+                    anim_set_translation(tile_pos);
+                }
+                anim_push_movement();
             }
-	    anim_new_movement(Display.tile_objects[tile], 1, 1);
-	    anim_set_hide(s == S_FORWARD);
-	    anim_push_movement();
-	    anim_launch();
-	}
+            int tile = -1;
+            if (s == S_FORWARD) {
+                tile = tileSrc;
+            } else {
+                tile = tileDest;
+            }
+            anim_new_movement(Display.tile_objects[tile], 1, 1);
+            anim_set_hide(s == S_FORWARD);
+            anim_push_movement();
+            anim_launch();
+        }
     }
 
     if (tileSrc >= 0 && tileDest >= 0) {
@@ -129,19 +150,19 @@ static void display_schedule_animations(enum SENS s)
  * Lance la lecture d'un mouvement dans l'historique.
  * @param s - Sens de la lecture.
  */
-static void display_read_move(enum SENS s)
+static void display_read_next_move(enum SENS s)
 {
     int newMove = 0;
     if (s == S_FORWARD) {
-	newMove = record_next(Display.records);
+        newMove = record_next(Display.records);
     }
     else if (s == S_REWIND) {
-	newMove = record_previous(Display.records);
+        newMove = record_previous(Display.records);
     }
 
     if (newMove) {
-	d3v_request_animation_frame();
-	display_schedule_animations(s);
+        d3v_request_animation_frame();
+        display_schedule_animations(s);
     }
 }
 
@@ -156,7 +177,7 @@ static void display_read_move(enum SENS s)
 static void draw_direction_link(void)
 {
     if (!Display.should_draw_links || Display.nb_links == 0) {
-	return;
+        return;
     }
 
     if (Display.active_tile_id >= Display.nb_tile_alloc) {
@@ -179,17 +200,112 @@ static void draw_direction_link(void)
 }
 #endif // DEBUG
 
+
+object_t*
+create_penguin(int id, model_t *m, texture_t *t, vec3 loc, float ROT, float SCALE)
+{
+    vec3 scale = { SCALE, SCALE, SCALE };
+    vec3 rot = { 0., ROT, 0. };
+    int program = get_or_load_shader(PENGUIN_SHADER_TEX_LIGHT);
+
+    char name[40] = {0};
+    snprintf(name, sizeof(name)-1, "penguin %d", id);
+    return d3v_object_create(m, t, loc, rot, scale, program, name);
+}
+
+object_t*
+create_tile(int id, model_t *m, texture_t *t, vec3 pos, float ROT, float SCALE)
+{
+    vec3 scale = { SCALE, SCALE, SCALE };
+    vec3 rot = { 0., ROT, 0. };
+    int program = get_or_load_shader(PENGUIN_SHADER_TEX_LIGHT);
+    char name[40] = {0};
+    snprintf(name, sizeof(name)-1, "tile %d", id);
+    return d3v_object_create(m, t, pos, rot, scale, program, name);
+}
+
+/**
+ * Permet au créateur de carte d'ajouter des pingouins à l'affichage.
+ * @param tile - Tuile où se trouve le pingouin.
+ * @param player - Identifiant du joueur.
+ * @return int:  0 si l'ajout est valide.
+ */
+static int display_add_penguin_impl(int tileid, int playerid)
+{
+    if (!Display.thread_running) {
+        fprintf(stderr, "Cannot add penguin objects if display thread is not running !!\n");
+        return -1;
+    }
+    int id = Display.nb_penguin_alloc;
+    if (id < 0 || id >= Display.nb_penguin) {
+        return -1;
+    }
+    int texid = playerid % Display.nb_penguin_tex;
+    texture_t *tex = Display.penguin_textures[texid];
+
+    vec3 pos;
+    d3v_object_get_position(Display.tile_objects[tileid], &pos);
+
+    Display.penguin_objects[id] = create_penguin(tileid, Display.penguin_model, tex, pos, 0.0, 0.1);
+    if (Display.penguin_objects[id] == NULL) {
+        return 0;
+    }
+    Display.tile_penguins_id[tileid] = id;
+    // penguins are initially hidden:
+    d3v_object_hide(Display.penguin_objects[id]);
+
+    // add apparition of penguin to history record
+    record_add(Display.records, -1, tileid);
+
+    ++Display.nb_penguin_alloc;
+
+    if (Display.autoplay) {
+        d3v_request_animation_frame();
+    }
+    return 0;
+}
+
+
+static void handle_new_penguins()
+{
+    #ifdef _WIN32
+    if (TryEnterCriticalSection(&display_thread.penguin_add_mutex))
+    #else
+    if (pthread_mutex_trylock(&display_thread.penguin_add_mutex)!= 0)
+    #endif
+    {
+        while (nb_pending_add_penguin_job > 0)
+        {
+            const penguin_add_job_t* job = &penguin_add_jobs[nb_pending_add_penguin_job-1];
+            display_add_penguin_impl(job->tileid, job->playerid);
+            --nb_pending_add_penguin_job;
+        }
+
+        #ifdef _WIN32
+        LeaveCriticalSection(&display_thread.penguin_add_mutex);
+        #else
+        pthread_mutex_unlock(&display_thread.penguin_add_mutex);
+        #endif
+    }
+}
+
 static void draw(void)
 {
+    handle_new_penguins();
+
     int nextMove = !anim_run();
     if (Display.autoplay && nextMove)
     {
-        display_read_move(S_FORWARD);
+        display_read_next_move(S_FORWARD);
     }
 
     #if DEBUG
     draw_direction_link();
     #endif // DEBUG
+
+    for (int i = 0; i < Display.nb_penguin_alloc; ++i) {
+        d3v_object_draw(Display.penguin_objects[i]);
+    }
 
     for (int i = 0; i < Display.nb_tile_alloc; ++i) {
 
@@ -215,9 +331,7 @@ static void draw(void)
         d3v_draw_text(data[0], pos);
     }
 
-    for (int i = 0; i < Display.nb_penguin_alloc; ++i) {
-        d3v_object_draw(Display.penguin_objects[i]);
-    }
+
 }
 
 static void prepare_link_data()
@@ -233,7 +347,7 @@ static void prepare_link_data()
     d3v_object_get_position(Display.tile_objects[Display.active_tile_id], &src_pos);
     for (int j = 0; j < Display.nb_tile; j++)
     {
-	if (Display.link[Display.active_tile_id][j])
+        if (Display.link[Display.active_tile_id][j])
         {
             ++Display.nb_links;
         }
@@ -245,9 +359,9 @@ static void prepare_link_data()
     int k = 0;
     for (int j = 0; j < Display.nb_tile; j++)
     {
-	if (Display.link[Display.active_tile_id][j])
+        if (Display.link[Display.active_tile_id][j])
         {
-	    vec3 dst_pos;
+            vec3 dst_pos;
             d3v_object_get_position(Display.tile_objects[j], &dst_pos);
 
             lines[6*k+0] = src_pos.x;
@@ -282,95 +396,69 @@ static void prepare_link_data()
 /***********************************************************/
 /******* EVENTS MANAGEMENT **************************/
 
-static void key_input(int key, int x, int y)
+static void key_input(int key, int scancode, int mods, int x, int y)
 {
-    switch (key) {
-    case 33: // 'p'
-	Display.autoplay = !Display.autoplay;
-	if (Display.autoplay) {
-	    puts("autoplay on");
-        } else {
-	    puts("autoplay off");
-        }
-	break;
-    case 39: // 's' for surrender
-	if (Display.mouseclick_mode)
-        {
-	    vec3 pos = { -INFINITY };
-	    dsp_signal_game_thread(&pos);
-	}
-        break;
-    case 111: // up
-	if (Display.active_tile_id < Display.nb_tile - 1)
-        {
-	    ++Display.active_tile_id;
-            prepare_link_data();
-        }
-	break;
-    case 116: // down
-	if (Display.active_tile_id > 0)
-        {
-	    --Display.active_tile_id;
-            prepare_link_data();
-        }
-	break;
-    case 113: // left
-        if (Display.autoplay) {
-            puts("autoplay off");
-            Display.autoplay = 0;
-        }
-	if (!anim_run())
-        {
-	    display_read_move(S_REWIND);
-        }
-	break;
-    case 114: // right
-	if (!anim_run())
-        {
-	    display_read_move(S_FORWARD);
-        }
-	break;
+    switch (scancode) {
+        case 33: // 'p'
+            Display.autoplay = !Display.autoplay;
+            if (Display.autoplay) {
+                puts("autoplay on");
+            } else {
+                puts("autoplay off");
+            }
+            break;
+        case 39: // 's' for surrender
+            if (Display.mouseclick_mode)
+            {
+                vec3 pos = { -INFINITY };
+                dsp_signal_game_thread(&pos);
+            }
+            break;
+        case 111: // up
+            if (Display.active_tile_id < Display.nb_tile - 1)
+            {
+                ++Display.active_tile_id;
+                prepare_link_data();
+            }
+            break;
+        case 116: // down
+            if (Display.active_tile_id > 0)
+            {
+                --Display.active_tile_id;
+                prepare_link_data();
+            }
+            break;
+        case 113: // left
+            if (Display.autoplay) {
+                puts("autoplay off");
+                Display.autoplay = 0;
+            }
+            if (!anim_run())
+            {
+                display_read_next_move(S_REWIND);
+            }
+            break;
+        case 114: // right
+            if (!anim_run())
+            {
+                display_read_next_move(S_FORWARD);
+            }
+            break;
     }
-
 }
 
 static void mouse(int button, int state, int x, int y)
 {
     switch (button) {
-    case GLFW_MOUSE_BUTTON_1:
-	if (state == GLFW_RELEASE && Display.mouseclick_mode)
-        {
-	    vec3 pos;
-	    d3v_mouseproj(&pos, x, y);
-	    dsp_signal_game_thread(&pos);
-	}
-	break;
+        case GLFW_MOUSE_BUTTON_1:
+            if (state == GLFW_RELEASE && Display.mouseclick_mode)
+            {
+                vec3 pos;
+                d3v_mouseproj(&pos, x, y);
+                dsp_signal_game_thread(&pos);
+            }
+            break;
     }
-}
-
-
-
-struct object*
-create_penguin(int id, model_t *m, texture_t *t, vec3 loc, float ROT, float SCALE)
-{
-    vec3 scale = { SCALE, SCALE, SCALE };
-    vec3 rot = { 0., ROT, 0. };
-    int program = get_or_load_shader(PENGUIN_SHADER_TEX_LIGHT);
-
-    char name[40] = {0};
-    snprintf(name, sizeof(name)-1, "penguin %d", id);
-    return d3v_object_create(m, t, loc, rot, scale, program, name);
-}
-
-struct object*
-create_tile(int id, model_t *m, texture_t *t, vec3 pos, float ROT, float SCALE)
-{
-    vec3 scale = { SCALE, SCALE, SCALE };
-    vec3 rot = { 0., ROT, 0. };
-    int program = get_or_load_shader(PENGUIN_SHADER_TEX_LIGHT);
-    char name[40] = {0};
-    snprintf(name, sizeof(name)-1, "tile %d", id);
-    return d3v_object_create(m, t, pos, rot, scale, program, name);
 }
 
 /**
@@ -410,8 +498,8 @@ static int display_add_tile(int tile_id, int model_id, int texture_id,
         exit(EXIT_FAILURE);
     }
 
-    struct model *model = Display.tile_models[model_id];
-    struct texture *tex = Display.tile_textures[texture_id];
+    model_t *model = Display.tile_models[model_id];
+    texture_t *tex = Display.tile_textures[texture_id];
     Display.tile_objects[id] = create_tile(tile_id, model, tex, pos, (float)angle, scale);
     Display.tile_nb_fishes[id] = fish_count;
     Display.tile_penguins_id[id] = -1;
@@ -424,44 +512,29 @@ static int display_add_tile(int tile_id, int model_id, int texture_id,
     return 0;
 }
 
-/**
- * Permet au créateur de carte d'ajouter des pingouins à l'affichage.
- * @param tile - Tuile où se trouve le pingouin.
- * @param player - Identifiant du joueur.
- * @return int:  0 si l'ajout est valide.
- */
+
+// called from game thread
 int display_add_penguin(int tileid, int playerid)
 {
-    if (!Display.thread_running) {
-        fprintf(stderr, "Cannot add penguin objects if display thread is not running !!\n");
-        return -1;
-    }
-    int id = Display.nb_penguin_alloc;
-    if (id < 0 || id >= Display.nb_penguin) {
-        return -1;
-    }
-    int texid = playerid % Display.nb_penguin_tex;
-    struct texture *tex = Display.penguin_textures[texid];
+    printf("adding penguin from game thread!!!\n");
+    penguin_add_job_t job = {
+        .playerid = playerid,
+        .tileid = tileid
+    };
 
-    vec3 pos;
-    d3v_object_get_position(Display.tile_objects[tileid], &pos);
+    #ifdef _WIN32
+    EnterCriticalSection(&display_thread.penguin_add_mutex);
+    #else
+    pthread_mutex_lock(&display_thread.penguin_add_mutex);
+    #endif
 
-    Display.penguin_objects[id] = create_penguin(tileid, Display.penguin_model, tex, pos, 0.0, 0.1);
-    if (Display.penguin_objects[id] == NULL) {
-        return 0;
-    }
-    Display.tile_penguins_id[tileid] = id;
-    // penguins are initially hidden:
-    d3v_object_hide(Display.penguin_objects[id]);
+    penguin_add_jobs[nb_pending_add_penguin_job++] = job;
 
-    // add apparition of penguin to history record
-    record_add(Display.records, -1, tileid);
-
-    ++Display.nb_penguin_alloc;
-
-    if (Display.autoplay) {
-        d3v_request_animation_frame();
-    }
+    #ifdef _WIN32
+    LeaveCriticalSection(&display_thread.penguin_add_mutex);
+    #else
+    pthread_mutex_unlock(&display_thread.penguin_add_mutex);
+    #endif
     return 0;
 }
 
@@ -480,7 +553,7 @@ static void init_display_module(void)
     Display.link = calloc(nb_tile, sizeof(*Display.link));
 
     for (int i = 0; i < nb_tile; ++i) {
-	Display.link[i] = calloc(nb_tile, sizeof(*Display.link[0]));
+        Display.link[i] = calloc(nb_tile, sizeof(*Display.link[0]));
     }
 
     Display.autoplay = 1;
@@ -543,7 +616,7 @@ static void free_models_and_textures(void)
 {
     // free penguins textures and models:
     for (int i = 0; i < Display.nb_penguin_tex; ++i) {
-	texture_free(Display.penguin_textures[i]);
+        texture_free(Display.penguin_textures[i]);
         Display.penguin_textures[i] = NULL;
     }
     free(Display.penguin_textures);
@@ -553,10 +626,10 @@ static void free_models_and_textures(void)
     model_free(Display.penguin_model);
 
     for (int i = 0; i < Display.nb_registered_textures; ++i) {
-	texture_free(Display.tile_textures[i]);
+        texture_free(Display.tile_textures[i]);
     }
     for (int i = 0; i < Display.nb_registered_models; ++i) {
-	model_free(Display.tile_models[i]);
+        model_free(Display.tile_models[i]);
     }
     free(Display.tile_textures);
     free(Display.tile_models);
@@ -570,7 +643,7 @@ static void free_display_module(void)
     int count = Display.nb_penguin_alloc;
     Display.nb_penguin_alloc = 0;
     for (int i = 0; i < count; i++) {
-	d3v_object_free(Display.penguin_objects[i]);
+        d3v_object_free(Display.penguin_objects[i]);
         Display.penguin_objects[i] = NULL;
     }
     free(Display.penguin_objects);
@@ -579,7 +652,7 @@ static void free_display_module(void)
     count = Display.nb_tile_alloc;
     Display.nb_tile_alloc = 0;
     for (int i = 0; i < count; i++) {
-	d3v_object_free(Display.tile_objects[i]);
+        d3v_object_free(Display.tile_objects[i]);
         Display.tile_objects[i] = NULL;
     }
     free(Display.tile_objects);
@@ -591,7 +664,7 @@ static void free_display_module(void)
 
     record_free(Display.records);
     for (int i = 0; i < count; ++i) {
-	free(Display.link[i]);
+        free(Display.link[i]);
         Display.link[i] = NULL;
     }
     free(Display.link);
@@ -624,9 +697,9 @@ static void setup_directions_links(void)
             int dest = move_is_valid_aux(i, direction, nb_moves);
 
             while (dest != -1) {
-        	display_add_link(i, dest);
-        	++nb_moves;
-        	dest = move_is_valid_aux(i, direction, nb_moves);
+                display_add_link(i, dest);
+                ++nb_moves;
+                dest = move_is_valid_aux(i, direction, nb_moves);
             }
         }
     }
@@ -637,6 +710,9 @@ static void setup_directions_links(void)
 /*** STARTS *****/
 static void* display_thread_main(void *args)
 {
+    #ifdef _WIN32
+    InitializeCriticalSection(&display_thread.penguin_add_mutex);
+    #endif
     init_anim_module();
     init_display_module();
 
@@ -675,7 +751,11 @@ static void* display_thread_main(void *args)
         dsp_signal_game_thread(&pos);
     }
 
+    #ifdef __unix__
     pthread_exit(DISPLAY_THREAD_RETVAL);
+    #else
+    ExitThread(DISPLAY_THREAD_RETVAL);
+    #endif
 }
 
 
@@ -688,8 +768,16 @@ void create_display_thread(int nb_dimension, int nb_tile, int nb_penguin)
     Display.nb_penguin = nb_penguin;
     Display.nb_dimension = nb_dimension;
 
+    #ifdef __unix__
     pthread_attr_init(&display_thread.attr);
     pthread_create(&display_thread.t, &display_thread.attr, &display_thread_main, NULL);
+    #else
+    display_thread.t = CreateThread(
+        NULL, 0, 
+        display_thread_main, NULL,
+        0, &display_thread.ThreadId
+    );
+    #endif
 }
 
 int join_display_thread(void)
@@ -697,13 +785,16 @@ int join_display_thread(void)
     void *retval = NULL;
 
     puts("Waiting for the user to end the display ...");
+    #ifdef __unix__
     pthread_join(display_thread.t, &retval);
-
+    #else
+    WaitForSingleObject(display_thread.t, INFINITE);
+    #endif
     fprintf(stderr, "exiting display thread!\n");
 
     if (retval == DISPLAY_THREAD_RETVAL) {
-	puts("display thread exited successfully");
-	return 0;
+        puts("display thread exited successfully");
+        return 0;
     }
     return -1;
 }
@@ -722,7 +813,7 @@ int join_display_thread(void)
 int display_add_move(int src, int dst)
 {
     if (!Display.thread_running) {
-	return -1;
+        return -1;
     }
     int id = record_add(Display.records, src, dst);
 

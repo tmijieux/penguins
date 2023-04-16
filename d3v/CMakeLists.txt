@@ -1,42 +1,36 @@
 
-find_package(Freetype REQUIRED)
+file(GLOB _d3v_headers include/**/*.h)
+file(GLOB _d3v_src *.c)
 
-set(_d3v_src
-  d3v.c
-  scene.c
-  camera.c
-  light.c
-  object.c
-  texture.c
-  model.c
-  shader.c
-  mouse_projection.c
-  )
-
-add_library(
-  d3v
-  SHARED
+add_library(d3v STATIC
   ${_d3v_src}
+  ${_d3v_headers}
+  include/stb_image.h
+  include/penguins_opengl.h
   )
 
 target_include_directories(
   d3v
   PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  "${CMAKE_SOURCE_DIR}/include"
   )
 
 
 target_link_libraries(d3v
   penguins_utils
   ####
-  m
-  jpeg
   ####
-  GL # OpenGL core
-  GLU # GL utility
+  glad
+  # GL # OpenGL core
+  ${GLU_LIBRARY} # GLU = GL utility
   # X11 (X11 window management)
-  glfw # GL FrameWork (portable cross-platform window management) (alternative to GLUT)
+  glfw::glfw # GL FrameWork (portable cross-platform window management) (alternative to GLUT)
 
   Freetype::Freetype
-  )
+)
+if (UNIX)
+  target_link_libraries(d3v m)
+endif (UNIX)
+
 install(TARGETS d3v DESTINATION penguins/lib)

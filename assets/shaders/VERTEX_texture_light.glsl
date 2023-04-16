@@ -6,7 +6,7 @@ layout (location = 2) in vec2 iTexCoord;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 proj;
-uniform mat4 normal;
+// uniform mat4 normal;
 
 out vec2 TexCoord;
 out vec3 Normal;
@@ -20,6 +20,7 @@ void main()
     gl_Position = proj * viewPos;
 
     TexCoord = iTexCoord;
+    // FIXME use uniform('normal') the the inverse VM
     Normal = mat3(transpose(inverse(viewmodel))) * iNormal;
     // Normal = vec3(viewmodel * vec4(iNormal, 0.0));
     // Normal = iNormal;

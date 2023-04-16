@@ -1,19 +1,17 @@
 /**
  * @file display.c
  */
-
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 #define __USE_XOPEN 1
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <pthread.h>
 
-
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glu.h>
+#include "penguins_opengl.h"
 
 #include "utils/vec.h"
 
@@ -43,26 +41,27 @@ scene_t scene;
  * @param y - Position y de la sourie.
  */
 __internal
-void d3v_key(int key, int x, int y)
+void d3v_key(int key, int scancode, int mods, int x, int y)
 {
     if (scene.key_input_callback) {
-	scene.key_input_callback(key, x, y);
+        scene.key_input_callback(key, scancode, mods, x, y);
     }
-    switch (key) {
-    case 27: // 'r'
-	d3v_camera_set_look(scene.camera, &scene.first_look);
-	d3v_camera_set_rotate(scene.camera, -90, 0);
-	d3v_camera_set_distance(scene.camera, 10.);
-	break;
-    case 9:	// ESC
-	if (scene.exit_callback) {
-	    scene.exit_callback();
-        }
-	d3v_request_exit_from_main_loop(); // maybe remove that
-	break;
-    case 84: // 'KP_5'
-	d3v_camera_switch_ortho(scene.camera);
-	break;
+    switch (scancode) {
+        case 19: // 'r'
+            d3v_camera_set_look(scene.camera, &scene.first_look);
+            d3v_camera_set_rotate(scene.camera, -90, -90);
+            d3v_camera_set_distance(scene.camera, 10.);
+            break;
+        case 1: // ESC
+            if (scene.exit_callback) {
+                scene.exit_callback();
+            }
+            d3v_request_exit_from_main_loop(); // maybe remove that
+            break;
+        case 6: // 5 (with or without SHIFT key)
+        case 76: // 'KP_5'
+            d3v_camera_switch_ortho(scene.camera);
+            break;
     }
 }
 
@@ -85,18 +84,18 @@ void d3v_button(int button, int state, int x, int y)
     }
 
     switch (button) {
-    case GLFW_MOUSE_BUTTON_1:
-        switch (state) {
-        case GLFW_PRESS:   scene.button = 1; break;
-        case GLFW_RELEASE: scene.button = 0; break;
-        } break;
-    case GLFW_MOUSE_BUTTON_2:
-        switch (state) {
-        case GLFW_PRESS:   scene.button = 2; break;
-        case GLFW_RELEASE: scene.button = 0; break;
-        } break;
-    case GLFW_MOUSE_BUTTON_4: d3v_camera_add_distance(scene.camera, -0.4); break;
-    case GLFW_MOUSE_BUTTON_5: d3v_camera_add_distance(scene.camera, 0.4);  break;
+        case GLFW_MOUSE_BUTTON_1:
+            switch (state) {
+                case GLFW_PRESS:   scene.button = 1; break;
+                case GLFW_RELEASE: scene.button = 0; break;
+            }
+            break;
+        case GLFW_MOUSE_BUTTON_2:
+            switch (state) {
+                case GLFW_PRESS:   scene.button = 2; break;
+                case GLFW_RELEASE: scene.button = 0; break;
+            }
+            break;
     }
 }
 
@@ -109,11 +108,11 @@ __internal
 void d3v_mouse_motion(int x, int y)
 {
     if (scene.button == 1) { // bouton gauche
-	d3v_camera_translate(scene.camera,
-			 (double) (scene.xold-x) / 70.,
-			 (double) (y-scene.yold) / 70.);
+        d3v_camera_translate(scene.camera,
+                             (double) (scene.xold-x) / 70.,
+                             (double) (y-scene.yold) / 70.);
     } else if (scene.button == 2) { // bouton droit
-	d3v_camera_rotate(scene.camera, scene.yold-y, scene.xold-x);
+        d3v_camera_rotate(scene.camera, scene.yold-y, scene.xold-x);
     }
     scene.xold = x; scene.yold = y;
 }
@@ -126,10 +125,17 @@ void d3v_mouse_motion(int x, int y)
 __internal
 void d3v_reshape(int w, int h)
 {
-    if (w > h)
-       glViewport((w-h)/2, 0, h, h);
-    else
-       glViewport(0, (h-w)/2, w, w);
+    if (w > h) {
+        glViewport((w-h)/2, 0, h, h);
+    } else {
+        glViewport(0, (h-w)/2, w, w);
+    }
+    // need to recompute perspective projection
+    // or ensure aspect ratio cannot be changed
+    // because perspective depend on aspect ratio
+    // also if perspective does not match window
+    // this can potentially create wrong results
+    // for unproject ??? (mouseclick feature)
 }
 
 /*******************************************************/
@@ -137,8 +143,7 @@ void d3v_reshape(int w, int h)
 
 static void draw_camera(int shader_id, void *data)
 {
-    glUseProgram(shader_id);
-    d3v_camera_draw(scene.camera);
+    d3v_camera_draw(scene.camera, shader_id);
 }
 
 
@@ -155,22 +160,20 @@ void d3v_scene_draw()
         for_each_shader_program(draw_camera, NULL);
     }
 
+    // all lighting is currently
+    // hardcoded in shader code
+    // consider adding uniform to do materials...
     /* d3v_light_update(scene.light); */
 
     if (scene.draw_callback) {
         scene.draw_callback();
     }
 
-    /* printf("scene object count %d\n", scene.object_count); */
     for (int i = 0; i < scene.object_count; i++)
     {
         object_t * obj = scene.object_buf[i];
-        /* printf("drawing object %s\n", d3v_object_get_name(obj)); */
         d3v_object_draw(obj);
     }
-
-    // add wire and (raster) string HERE !
-
 }
 
 /***********************************************************/
@@ -203,7 +206,7 @@ void d3v_scene_module_exit(void)
     int count = scene.object_count;
     scene.object_count = 0;
     for (int i = 0; i < count ; ++i) {
-	d3v_object_free(scene.object_buf[i]);
+        d3v_object_free(scene.object_buf[i]);
         scene.object_buf[i] = NULL;
     }
     free(scene.object_buf);
@@ -212,24 +215,22 @@ void d3v_scene_module_exit(void)
 
 
 // PUBLIC
-void d3v_set_mouse_callback(
-    void (*mouse_callback)(int,int,int,int))
+void d3v_set_mouse_callback(mouse_callback_t mouse_callback)
 {
     scene.mouse_callback = mouse_callback;
 }
 
-
-void d3v_set_key_input_callback(void (*key_input_callback)(int,int,int))
+void d3v_set_key_input_callback( key_input_callback_t key_input_callback)
 {
     scene.key_input_callback = key_input_callback;
 }
 
-void d3v_set_draw_callback(void (*draw_callback)(void))
+void d3v_set_draw_callback(draw_callback_t draw_callback)
 {
     scene.draw_callback = draw_callback;
 }
 
-void d3v_set_exit_callback(void (*exit_callback)(void))
+void d3v_set_exit_callback(exit_callback_t exit_callback)
 {
     scene.exit_callback = exit_callback;
 }

@@ -2,21 +2,22 @@
 #include <limits.h>
 #include <math.h>
 
-#include "client_interface.h"
-#include "game_interface.h"
+#include "penguins/client_interface.h"
+#include "penguins/game_interface.h"
 
 #include "utils/graph.h"
 #include "utils/list.h"
 
-struct _client {
+typedef struct _client {
     int id;
     int nb_tile;
     struct graph *graph;
     struct list *my_penguins;
     int last_penguin;
     int nb_players;
-};
-static struct _client client;
+} Client;
+static Client client;
+static game_methods_t GameM;
 
 struct penguin
 {
@@ -60,24 +61,25 @@ static int get_penguin_tile(int player, int penguin, struct graph * graph)
 
 static void parse_tile(int tile)
 {
-    int nc = tile__get_neighbour_count(tile);
-    const int *neighbour = tile__get_neighbour(tile);
-    int fish = tile__get_fishes(tile);
+    int nc = GameM.get_tile_neighbours_count(tile);
+    const int *neighbour = GameM.get_tile_neighbours(tile);
+    int fish = GameM.get_tile_nb_fishes(tile);
     graph_set_nb_fish(client.graph, tile, fish);
     for (int i = 0; i < nc; i++)
         graph_add_edge(client.graph, tile, neighbour[i]);
 }
 
-static void client_init(int nb_tile)
+static void client_init(int nb_tile, game_methods_t* game_methods)
 {
+    GameM = *game_methods;
     FILE *fichier = fopen("Log.txt", "w+");
     fclose(fichier);
-    client.id = game__get_current_player_id();
+    client.id = GameM.get_current_player_id();
     client.graph = graph_create(nb_tile, 0, GRAPH_LIST);
     client.my_penguins = list_create(LIST_FREE_MALLOCD_ELEMENT__);
     client.nb_tile = nb_tile;
     client.last_penguin = 0;
-    client.nb_players = game__get_nb_player();
+    client.nb_players = GameM.get_nb_player();
     for (int i = 0; i < nb_tile; i++) {
         parse_tile(i);
     }
@@ -102,7 +104,7 @@ static struct penguin *chose_penguin(void)
 static int do_move(int tile, int dir, int jump, struct graph *graph,
                    int player, int *tile_value)
 {
-    int dest = game__move_is_valid(tile, dir, jump);
+    int dest = GameM.move_is_valid(tile, dir, jump);
     if (dest < 0)
     {
         return -1;
@@ -123,13 +125,13 @@ static void client_play_safe(struct move *ret)
         p = chose_penguin();
         tile = penguin_get_tile(p);
         max_dir = max_jump = -1;
-        int nb_dir = tile__nb_direction(tile);
+        int nb_dir = GameM.get_tile_nb_direction(tile);
         int max_fish = -1;
         for (int dir = 0; dir < nb_dir; dir++)
         {
             for (int jump = 1; jump < 10; jump++)
             {
-                if ((dest = game__move_is_valid(tile, dir, jump)) > -1)
+                if ((dest = GameM.move_is_valid(tile, dir, jump)) > -1)
                 {
                     int nb_fish = graph_get_nb_fish(client.graph, dest);
                     if (max_fish < nb_fish)
@@ -137,7 +139,7 @@ static void client_play_safe(struct move *ret)
                         max_fish = nb_fish;
                         max_dir = dir;
                         max_jump = jump;
-                        move__set(ret, tile, max_dir, max_jump);
+                        GameM.set_move(ret, tile, max_dir, max_jump);
                     }
                 }
                 else
@@ -147,7 +149,7 @@ static void client_play_safe(struct move *ret)
             }
         }
     }
-    while ((dest = game__move_is_valid(tile, max_dir, max_jump)) < 0);
+    while ((dest = GameM.move_is_valid(tile, max_dir, max_jump)) < 0);
     graph_set_nb_fish(client.graph, tile, -1);
     penguin_set_tile(p, dest);
 }
@@ -164,7 +166,7 @@ static void update_tile(int tile)
 {
     // an updated tile is necessary for the worst:
     graph_set_nb_fish(client.graph, tile, -1);
-    graph_set_player_id(client.graph, tile, tile__get_player(tile));
+    graph_set_player_id(client.graph, tile, GameM.get_tile_player(tile));
 }
 
 static void prev_recursif(int tours,
@@ -172,14 +174,14 @@ static void prev_recursif(int tours,
                           struct graph *graph,
                           int player, long *sc)
 {
-    int player_count = game__get_nb_player();
+    int player_count = GameM.get_nb_player();
     int player_value = player % player_count;
-    int nb_penguin = game__get_nb_penguin_player(player_value);
+    int nb_penguin = GameM.get_nb_penguin_player(player_value);
 
     for (int peng = 0; peng < nb_penguin; ++peng)
     {
         int tile = get_penguin_tile(player_value, peng, graph);
-        int nb_dir = tile__nb_direction(tile);
+        int nb_dir = GameM.get_tile_nb_direction(tile);
         for (int dir = 0; dir < nb_dir; dir++)
         {
             for (int jump = 1; jump < 10; jump++)
@@ -249,19 +251,19 @@ static void client_play(struct move *ret)
     int min_adv = INT_MAX;
     int nb_penguin = list_size(client.my_penguins);
     struct penguin *p = NULL;
-    int tile;
-    int dest;
+    int tile = 0;
+    int dest = 1;
     for (int penguin = 1; penguin <= nb_penguin; penguin++)
     {
         struct penguin *peng_temp = list_get_element(client.my_penguins,
                                                      penguin);
         int tile_temp = penguin_get_tile(peng_temp);
-        int nb_dir = tile__nb_direction(tile);
+        int nb_dir = GameM.get_tile_nb_direction(tile);
         for (int dir = 0; dir < nb_dir; dir++)
         {
             for (int jump = 1; jump < 30; jump++)
             {
-                if (game__move_is_valid(tile_temp, dir, jump) < 0)
+                if (GameM.move_is_valid(tile_temp, dir, jump) < 0)
                 {
                     break;
                 }
@@ -275,10 +277,10 @@ static void client_play(struct move *ret)
                 if (sc < min_adv)
                 {
                     min_adv = sc;
-                    move__set(ret, tile_temp, dir, jump);
+                    GameM.set_move(ret, tile_temp, dir, jump);
                     p = peng_temp;
                     tile = tile_temp;
-                    dest = game__move_is_valid(tile_temp, dir, jump);
+                    dest = GameM.move_is_valid(tile_temp, dir, jump);
                 }
                 graph_destroy(copy_graph);
             }

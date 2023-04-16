@@ -36,3 +36,10 @@ R: réinitialiser la caméra
 ![penguins 3d penrose](/assets/penguins3dpenrose.png)
 
 
+# Requirements / Dependencies
+
+- OpenGL
+- GLU
+- GLFW3
+- FreeType
+- libjpeg

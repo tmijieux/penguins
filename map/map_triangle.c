@@ -5,10 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "server/map.h"
-#include "server/coord.h"
-#include "utils/log.h"
-#include "display/display.h"
+#include "coord.h"
+#include "penguins/map_interface.h"
 
 #define SQRT_3 1.73205080757
 
@@ -33,39 +31,39 @@ static inline int odd(int x)
  * @param size - Taille des tableau.
  */
 static void get_vectors_from_direction(int vector0[], int vector1[],
-				       int direction, int size)
+                                       int direction, int size)
 {
     int step;
     switch (direction) {
     case 0:
-	vector0[0] = 1;
-	vector1[0] = 1;
-	break;
+        vector0[0] = 1;
+        vector1[0] = 1;
+        break;
     case 1:
-	vector0[0] = -1;
-	vector1[0] = -1;
-	break;
+        vector0[0] = -1;
+        vector1[0] = -1;
+        break;
     case 2:
-	vector0[1] = 1;
-	vector1[0] = 1;
-	break;
+        vector0[1] = 1;
+        vector1[0] = 1;
+        break;
     case 3:
-	vector0[0] = -1;
-	vector1[1] = -1;
-	break;
+        vector0[0] = -1;
+        vector1[1] = -1;
+        break;
     case 4:
-	vector0[0] = 1;
-	vector1[1] = -1;
-	break;
+        vector0[0] = 1;
+        vector1[1] = -1;
+        break;
     case 5:
-	vector0[1] = 1;
-	vector1[0] = -1;
-	break;
+        vector0[1] = 1;
+        vector1[0] = -1;
+        break;
     default:
-	step = 1 - 2 * (direction % 2);
-	vector0[direction / 2 -1] = step;
-	vector1[direction / 2 -1] = step;
-	break;
+        step = 1 - 2 * (direction % 2);
+        vector0[direction / 2 -1] = step;
+        vector1[direction / 2 -1] = step;
+        break;
     }
 }
 
@@ -78,7 +76,7 @@ static void get_vectors_from_direction(int vector0[], int vector1[],
 static void add_vector(int coord[], int vector[], int size)
 {
     for (int i = 0; i < size; i++) {
-	coord[i] += vector[i];
+        coord[i] += vector[i];
     }
 }
 
@@ -88,73 +86,71 @@ static void add_vector(int coord[], int vector[], int size)
  * @param nb_tile - Nombre de tuiles.
  * @param graph - Graphe du jeu.
  */
-static void init_graph(int dimension, int nb_tile, struct graph *graph)
+static void init_graph(int dimension, int nb_tile, struct graph *graph, display_methods_t *display)
 {
     int *coord = malloc(dimension * sizeof(int));
     length = coord_get_length_side(nb_tile, dimension);
-    #ifdef USE_GL_DISPLAY__
     int model = -1;
     int texture = -1;
     if (dimension >= 1 && dimension <= 3) {
-	model = display_register_model("models/wavefront/triangle_tile.obj");
-        texture = display_register_texture("textures/glace.jpg");
+        model = display->register_model("models/wavefront/triangle_tile.obj");
+        texture = display->register_texture("textures/glace.jpg");
     }
-    #endif
 
     for (int i = 0; i < nb_tile; i++) {
-	int dim = length * length;
-	coord_get_coordinates_from_id(i, nb_tile, length, dimension, coord);
-	int is_odd = odd(coord[0] + coord[1]);
+        int dim = length * length;
+        coord_get_coordinates_from_id(i, nb_tile, length, dimension, coord);
+        int is_odd = odd(coord[0] + coord[1]);
 
-	if (coord[0] + 1 < length && i + 1 < nb_tile) {
-	    graph_add_edge(graph, i, i + 1);
+        if (coord[0] + 1 < length && i + 1 < nb_tile) {
+            graph_add_edge(graph, i, i + 1);
         }
 
-	if (!is_odd && coord[1] + 1 < length && i + length < nb_tile) {
-	    graph_add_edge(graph, i, i + length);
+        if (!is_odd && coord[1] + 1 < length && i + length < nb_tile) {
+            graph_add_edge(graph, i, i + length);
         }
 
-	for (int j = 2; j < dimension; j++) {
-	    if (coord[j] + 1 < length && i + dim < nb_tile) {
-		graph_add_edge(graph, i, i + dim);
+        for (int j = 2; j < dimension; j++) {
+            if (coord[j] + 1 < length && i + dim < nb_tile) {
+                graph_add_edge(graph, i, i + dim);
             }
-	    dim *= length;
-	}
+            dim *= length;
+        }
 
 
         vdata_t data;
-	graph_get_data(graph, i, &data);
+        graph_get_data(graph, i, &data);
         data.model_id = model;
         data.texture_id = texture;
         data.angle = 90. + is_odd * 180.;
         data.scale = 0.7;
 
-	switch (dimension) {
-	case 1:
+        switch (dimension) {
+        case 1:
             data.loc = (vec3) {
                 is_odd * SQRT_3 / 3,
                 0.,
                 coord[0]
             };
-	    break;
-	case 2:
+            break;
+        case 2:
             data.loc = (vec3) {
                 coord[1] * SQRT_3 - is_odd * SQRT_3 / 3,
                 0.,
                 coord[0]
             };
-	    break;
-	case 3:
+            break;
+        case 3:
             data.loc = (vec3) {
                 coord[1] * SQRT_3 - is_odd * SQRT_3 / 3,
                 coord[2],
                 coord[0]
             };
 
-	    break;
-	default:
-	    break;
-	}
+            break;
+        default:
+            break;
+        }
     }
     free(coord);
 }
@@ -169,7 +165,7 @@ static void init_graph(int dimension, int nb_tile, struct graph *graph)
 static int get_number_directions(int tile, int dimension, int nb_tile)
 {
     if (dimension == 1) {
-	return 2;
+        return 2;
     }
     return 2 + dimension * 2;
 }
@@ -196,9 +192,9 @@ static int get_id_from_move(int origin, int *direction, int dimension,
     get_vectors_from_direction(vector0, vector1, *direction, dimension);
 
     if (odd(coord[0] + coord[1])) {
-	int *tmp = vector0;
-	vector0 = vector1;
-	vector1 = tmp;
+        int *tmp = vector0;
+        vector0 = vector1;
+        vector1 = tmp;
     }
     add_vector(coord, vector0, dimension);
 

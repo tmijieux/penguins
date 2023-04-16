@@ -6,19 +6,17 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdarg.h>
-#include <unistd.h>
+//#include <unistd.h>
 #include <string.h>
 
-#include <server/server.h>
-#include <server/player.h>
-#include <server/path.h>
+#include "server/server.h"
+#include "server/player.h"
 
-#include <d3v/d3v.h>
+#include "d3v/d3v.h"
+#include "utils/log.h"
+#include "utils/math.h"
 
-#include <utils/log.h>
-#include <utils/math.h>
-
-#include "option.h"
+#include "server/option_parser.h"
 
 #ifndef TEST
 
@@ -44,8 +42,6 @@ const char *usage(void)
  */
 int main(int argc, char *argv[])
 {
-    int dirfd = path_init(argv[0]);
-    d3v_init_asset_path(dirfd);
 
     rand_seed();
     log_init(LOG_LEVEL, SERVER_LOG_FILE);
@@ -73,7 +69,6 @@ int main(int argc, char *argv[])
 
     server_exit();
     log_exit();
-    path_exit();
     return EXIT_SUCCESS;
 }
 

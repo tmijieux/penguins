@@ -3,7 +3,7 @@
 
 #define MAX_CLIENT 50
 
-#include "client_interface.h"
+#include "penguins/client_interface.h"
 
 struct client {
     struct client_methods methods;

@@ -1,15 +1,14 @@
 /**
  * @file camera.c
  */
-
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-#define GL_GLEXT_PROTOTYPES
-
-#include <GL/gl.h>
-#include <GL/glu.h>
+#include "penguins_opengl.h"
 
 #include "utils/math.h"
 #include "d3v/camera.h"
@@ -233,16 +232,16 @@ int d3v_camera_update(camera_t *c)
     return 1;
 }
 
-void d3v_camera_draw(camera_t *c)
+void d3v_camera_draw(camera_t *c, int shader_program)
 {
-    int shader = -1;
-    glGetIntegerv(GL_CURRENT_PROGRAM, &shader);
-    if (shader != 0) {
-        uint32_t loc = glGetUniformLocation(shader, "proj");
+    glUseProgram(shader_program);
+
+    if (shader_program != 0) {
+        uint32_t loc = glGetUniformLocation(shader_program, "proj");
         if (loc != -1) {
             glUniformMatrix4fv(loc, 1, GL_FALSE, c->proj.m);
         }
-        loc = glGetUniformLocation(shader, "view");
+        loc = glGetUniformLocation(shader_program, "view");
         if (loc != -1) {
             glUniformMatrix4fv(loc, 1, GL_TRUE, c->view.m);
         }

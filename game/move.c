@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "game_interface.h"
+#include "penguins/game_interface.h"
 
 #include "server/move_impl.h"
 #include "server/server.h"

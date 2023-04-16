@@ -2,7 +2,7 @@
 #define PENGUINS_PLAYER_H
 
 #include "server/move_impl.h"
-#include "client_interface.h"
+#include "penguins/client_interface.h"
 
 
 void player_module_init(void);

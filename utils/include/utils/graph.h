@@ -1,8 +1,7 @@
 #ifndef PENGUINS_GRAPH_H
 #define PENGUINS_GRAPH_H
 
-#include <stdlib.h>
-
+#include <stdlib.h> // for size_t
 #include "utils/vec.h"
 
 #define GRAPH_MATRIX 0

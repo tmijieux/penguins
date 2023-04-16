@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <GL/glu.h>
+#include "penguins_opengl.h"
 
 #include "d3v/light.h"
 #include "d3v/d3v.h"
@@ -26,10 +26,10 @@ struct light {
  * Création de la lumière.
  * @return struct light * - La lumière.
  */
-  __internal
-struct light *d3v_light_create(void)
+__internal
+light_t *d3v_light_create(void)
 {
-    struct light *l = malloc(sizeof(*l));
+    light_t *l = malloc(sizeof(*l));
 
     // position
     l->L0pos[0] = 0.0;
@@ -78,7 +78,7 @@ struct light *d3v_light_create(void)
  * @param l - La lumière.
  */
 __internal
-void d3v_light_update(struct light *l)
+void d3v_light_update(light_t *l)
 {
     //GLfloat mat[] = { 0.0, -1.0, 0.5, 0.0 };
     /* HANDLE_GL_ERROR(glLightfv(GL_LIGHT0, GL_POSITION, l->L0pos)); */
@@ -90,7 +90,7 @@ void d3v_light_update(struct light *l)
  * x@param l - La lumière.
  */
  __internal
-void d3v_light_free(struct light *l)
+void d3v_light_free(light_t *l)
 {
     free(l);
 }
