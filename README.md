@@ -1,7 +1,8 @@
-# penguins
-Les pingouins ou la vie.
+# Pingouins !
+(a board game about penguins)
 
-play the "hey that's my fish" game on a 1D, 2D or 3D platform (in a 3D view) versus AI or other players
+Play the "hey that's my fish" game on a 1D, 2D or 3D platform (in a 3D view)
+versus AI or other players
 (it can also be ran with n dimension , n > 3, but without a 3D view)
 
 you can also:
@@ -16,18 +17,20 @@ currently available map types are:
   - penrose
 
 
-# touche controle:
+# Control keys:
 
-FLECHE GAUCHE: retour arrière
-FLECHE DROITE: avancer
+- LEFT ARROW: go back in game history
+- RIGHT ARROW: go forward in game history
+- UP ARROW: in a given debug mode, red threads are displayed for all tiles reachable from a given selected tiles. The key binding change the selected tile.
+- DOWN ARROW: Same as UP ARROW but in the other direction.
+- P: Toggle "autoplay" (animations are playing on 3D board automatically when AI are playing their moves without the user having to pres RIGHT ARROW)
+- S: [S]urrend (Human player leave the game and let the AIs finish the game on their own)
+- R: Reset camera to initial position
+- 5 (numeric keypad): Toggle between perspective and orthographic projection.
+- LEFT MOUSE BUTTON: translate the 3D view
+- RIGHT MOUSE BUTTON: rotate the 3D view
+- MOUSE WHEEL: Zoom in or Zoom out the 3D view
 
-FLECHE HAUT: deplacer la case sélectionée pour afficher les aretes du graphes entre les cases
-FLECHE BAS: deplacer la case sélectionée pour afficher les aretes du graphes entre les cases
-
-P: Activer/Désactiver "l'autoplay"
-S: abandonner (s pour surrender)
-R: réinitialiser la caméra
-5 (pavé numérique): switcher entre project orthogonale et perspective
 
 # screenshot
 
@@ -36,12 +39,11 @@ R: réinitialiser la caméra
 
 # Requirements / Dependencies
 
-- OpenGL
-- GLU
+- OpenGL with GLU (basically you need to have a OpenGL implementation installed, either mesa or your graphic card's driver)
 - GLFW3
 - FreeType
 
-also relying on the following software (bundled, no install required)  
+also relying on the following software (bundled, no install required)
 - glad
 - stbi\_image (https://github.com/nothings/stb/blob/master/stb\_image.h)
 
@@ -51,8 +53,8 @@ if all requirements are available just `make` should be enough
 on unix
 
 otherwise use cmake in a build directory to generate the build system:
-mkdir build
-cd build
-cmake ..
+- mkdir build
+- cd build
+- cmake ..
 
 The windows platform is supported using cmake and Visual Studio
