@@ -16,8 +16,6 @@ currently available map types are:
   - penrose
 
 
-
-
 # touche controle:
 
 FLECHE GAUCHE: retour arrière
@@ -42,4 +40,19 @@ R: réinitialiser la caméra
 - GLU
 - GLFW3
 - FreeType
-- libjpeg
+
+also relying on the following software (bundled, no install required)  
+- glad
+- stbi\_image (https://github.com/nothings/stb/blob/master/stb\_image.h)
+
+
+# How to build
+if all requirements are available just `make` should be enough
+on unix
+
+otherwise use cmake in a build directory to generate the build system:
+mkdir build
+cd build
+cmake ..
+
+The windows platform is supported using cmake and Visual Studio
