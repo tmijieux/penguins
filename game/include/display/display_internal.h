@@ -14,6 +14,7 @@ struct object;
 
 struct display {
     int thread_running;
+    int thread_terminated;
     int nb_dimension;
 
     // Plateau

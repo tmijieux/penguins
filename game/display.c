@@ -2,11 +2,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#ifdef __unix__
-# include <pthread.h>
-#else
-# include <Windows.h>
-#endif
+#include "utils/vec.h"
+#include "utils/math.h"
+#include "utils/list.h"
+#include "utils/threading.h"
 
 #include "penguins_opengl.h"
 
@@ -22,41 +21,32 @@
 #include "d3v/model.h"
 #include "d3v/texture.h"
 #include "d3v/mouse_projection.h"
+#include "d3v/user_callback.h"
 
 #include "server/map.h"
 #include "server/server.h"
 
-#include "utils/vec.h"
-#include "utils/math.h"
-#include "utils/list.h"
 
 #define PENGUIN_FILE "models/wavefront/penguin.obj"
 #define MAX_ADD_PENGUIN_JOB 50
+
 typedef struct penguin_add_job {
     int tileid;
     int playerid;
 } penguin_add_job_t;
+
 int nb_pending_add_penguin_job = 0;
 penguin_add_job_t penguin_add_jobs[MAX_ADD_PENGUIN_JOB];
-
 
 
 /**
  * Gestion du thread.
  */
 struct _display_thread {
-    #ifdef __unix__
-    pthread_t t;
-    pthread_attr_t attr;
-    pthread_mutex_t m;
-    pthread_mutex_t penguin_add_mutex;
-    #else
-    HANDLE t;
-    DWORD ThreadId;
-    CRITICAL_SECTION m;
-    CRITICAL_SECTION penguin_add_mutex;
-
-    #endif
+    peng_thread_t t;
+    peng_mutex_t m;
+    peng_mutex_t penguin_add_mutex;
+    int ThreadId;
 };
 static struct _display_thread display_thread;
 
@@ -232,10 +222,6 @@ create_tile(int id, model_t *m, texture_t *t, vec3 pos, float ROT, float SCALE)
  */
 static int display_add_penguin_impl(int tileid, int playerid)
 {
-    if (!Display.thread_running) {
-        fprintf(stderr, "Cannot add penguin objects if display thread is not running !!\n");
-        return -1;
-    }
     int id = Display.nb_penguin_alloc;
     if (id < 0 || id >= Display.nb_penguin) {
         return -1;
@@ -268,11 +254,7 @@ static int display_add_penguin_impl(int tileid, int playerid)
 
 static void handle_new_penguins()
 {
-    #ifdef _WIN32
-    if (TryEnterCriticalSection(&display_thread.penguin_add_mutex))
-    #else
-    if (pthread_mutex_trylock(&display_thread.penguin_add_mutex)!= 0)
-    #endif
+    if (peng_mutex_trylock(&display_thread.penguin_add_mutex))
     {
         while (nb_pending_add_penguin_job > 0)
         {
@@ -281,11 +263,7 @@ static void handle_new_penguins()
             --nb_pending_add_penguin_job;
         }
 
-        #ifdef _WIN32
-        LeaveCriticalSection(&display_thread.penguin_add_mutex);
-        #else
-        pthread_mutex_unlock(&display_thread.penguin_add_mutex);
-        #endif
+        peng_mutex_unlock(&display_thread.penguin_add_mutex);
     }
 }
 
@@ -396,68 +374,68 @@ static void prepare_link_data()
 /***********************************************************/
 /******* EVENTS MANAGEMENT **************************/
 
-static void key_input(int key, int scancode, int mods, int x, int y)
+static void key_input(int key, int scancode, int action, int mods, int x, int y)
 {
-    switch (scancode) {
-        case 33: // 'p'
-            Display.autoplay = !Display.autoplay;
-            if (Display.autoplay) {
-                puts("autoplay on");
-            } else {
-                puts("autoplay off");
-            }
-            break;
-        case 39: // 's' for surrender
-            if (Display.mouseclick_mode)
-            {
-                vec3 pos = { -INFINITY };
-                dsp_signal_game_thread(&pos);
-            }
-            break;
-        case 111: // up
-            if (Display.active_tile_id < Display.nb_tile - 1)
-            {
-                ++Display.active_tile_id;
-                prepare_link_data();
-            }
-            break;
-        case 116: // down
-            if (Display.active_tile_id > 0)
-            {
-                --Display.active_tile_id;
-                prepare_link_data();
-            }
-            break;
-        case 113: // left
-            if (Display.autoplay) {
-                puts("autoplay off");
-                Display.autoplay = 0;
-            }
-            if (!anim_run())
-            {
-                display_read_next_move(S_REWIND);
-            }
-            break;
-        case 114: // right
-            if (!anim_run())
-            {
-                display_read_next_move(S_FORWARD);
-            }
-            break;
+    switch (key) {
+    case GLFW_KEY_P: // 'p'
+        Display.autoplay = !Display.autoplay;
+        if (Display.autoplay) {
+            puts("autoplay on");
+        } else {
+            puts("autoplay off");
+        }
+        break;
+    case GLFW_KEY_S: // 's' for surrender
+        if (Display.mouseclick_mode)
+        {
+            vec3 pos = { -INFINITY };
+            dsp_signal_game_thread(&pos);
+        }
+        break;
+    case GLFW_KEY_UP: // up
+        if (Display.active_tile_id < Display.nb_tile - 1)
+        {
+            ++Display.active_tile_id;
+            prepare_link_data();
+        }
+        break;
+    case GLFW_KEY_DOWN: // down
+        if (Display.active_tile_id > 0)
+        {
+            --Display.active_tile_id;
+            prepare_link_data();
+        }
+        break;
+    case GLFW_KEY_LEFT: // left
+        if (Display.autoplay) {
+            puts("autoplay off");
+            Display.autoplay = 0;
+        }
+        if (!anim_run())
+        {
+            display_read_next_move(S_REWIND);
+        }
+        break;
+    case GLFW_KEY_RIGHT: // right
+        if (!anim_run())
+        {
+            display_read_next_move(S_FORWARD);
+        }
+        break;
     }
 }
 
-static void mouse(int button, int state, int x, int y)
+static void mouse(int button, int state, int mods, int x, int y)
 {
     switch (button) {
-        case GLFW_MOUSE_BUTTON_1:
-            if (state == GLFW_RELEASE && Display.mouseclick_mode)
-            {
-                vec3 pos;
-                d3v_mouseproj(&pos, x, y);
-                dsp_signal_game_thread(&pos);
-            }
-            break;
+    case GLFW_MOUSE_BUTTON_1:
+        if (state == GLFW_RELEASE && Display.mouseclick_mode)
+        {
+            vec3 pos;
+            d3v_mouseproj(&pos, x, y);
+            dsp_signal_game_thread(&pos);
+        }
+        break;
     }
 }
 
@@ -516,25 +494,19 @@ static int display_add_tile(int tile_id, int model_id, int texture_id,
 // called from game thread
 int display_add_penguin(int tileid, int playerid)
 {
-    printf("adding penguin from game thread!!!\n");
+    if (!Display.thread_running) {
+        fprintf(stderr, "Cannot add penguin objects if display thread is not running !!\n");
+        return -1;
+    }
+
     penguin_add_job_t job = {
         .playerid = playerid,
         .tileid = tileid
     };
 
-    #ifdef _WIN32
-    EnterCriticalSection(&display_thread.penguin_add_mutex);
-    #else
-    pthread_mutex_lock(&display_thread.penguin_add_mutex);
-    #endif
-
+    peng_mutex_lock(&display_thread.penguin_add_mutex);
     penguin_add_jobs[nb_pending_add_penguin_job++] = job;
-
-    #ifdef _WIN32
-    LeaveCriticalSection(&display_thread.penguin_add_mutex);
-    #else
-    pthread_mutex_unlock(&display_thread.penguin_add_mutex);
-    #endif
+    peng_mutex_unlock(&display_thread.penguin_add_mutex);
     return 0;
 }
 
@@ -710,9 +682,7 @@ static void setup_directions_links(void)
 /*** STARTS *****/
 static void* display_thread_main(void *args)
 {
-    #ifdef _WIN32
-    InitializeCriticalSection(&display_thread.penguin_add_mutex);
-    #endif
+    peng_mutex_init(&display_thread.penguin_add_mutex);
     init_anim_module();
     init_display_module();
 
@@ -742,20 +712,24 @@ static void* display_thread_main(void *args)
     fprintf(stderr, "exiting display thread!\n");
 
     Display.thread_running = 0;
+    Display.thread_terminated = 1;
 
     free_models_and_textures();
     free_display_module();
 
-    if (Display.mouseclick_mode) {
+    if (Display.mouseclick_mode)
+    {
+        printf("leaving  main loop while forfeiting mouseclick\n");
         vec3 pos = {-INFINITY};
         dsp_signal_game_thread(&pos);
     }
+    else
+    {
+        printf("not currently in  mouseclick\n");
+    }
 
-    #ifdef __unix__
-    pthread_exit(DISPLAY_THREAD_RETVAL);
-    #else
-    ExitThread(DISPLAY_THREAD_RETVAL);
-    #endif
+    peng_mutex_destroy(&display_thread.penguin_add_mutex);
+    peng_thread_exit(DISPLAY_THREAD_RETVAL);
 }
 
 
@@ -769,11 +743,10 @@ void create_display_thread(int nb_dimension, int nb_tile, int nb_penguin)
     Display.nb_dimension = nb_dimension;
 
     #ifdef __unix__
-    pthread_attr_init(&display_thread.attr);
-    pthread_create(&display_thread.t, &display_thread.attr, &display_thread_main, NULL);
+    pthread_create(&display_thread.t, NULL, &display_thread_main, NULL);
     #else
     display_thread.t = CreateThread(
-        NULL, 0, 
+        NULL, 0,
         display_thread_main, NULL,
         0, &display_thread.ThreadId
     );

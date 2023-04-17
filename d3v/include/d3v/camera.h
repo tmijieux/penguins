@@ -19,7 +19,9 @@ void d3v_camera_set_rotate(camera_t *c, int ar, int ay);
 // changement camera
 void d3v_camera_translate(camera_t *c, double dx, double dy);
 void d3v_camera_add_distance(camera_t *c, double d);
+void d3v_camera_set_aspect_ratio(camera_t *c, double ratio);
 void d3v_camera_rotate(camera_t *c, int ar, int ay);
+
 
 // "affichage"
 int d3v_camera_update(camera_t *c);// return whether a draw is required

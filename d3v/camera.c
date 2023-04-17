@@ -25,6 +25,7 @@ struct camera {
 
     double angleX; // "latitude" angle around X axis
     double angleY; // "longitude" angle around Y axis
+    double aspect_ratio;// aspect ratio of the window
 
     int ortho;
     double orthosize;
@@ -80,6 +81,7 @@ d3v_camera_create(vec3 look, double distance, int angleX, int angleY, int ortho)
     c->angleY = degree_to_radian(angleY);
     c->look = look;
     c->distance = distance;
+    c->aspect_ratio = 1;
     c->dirty = 1;
     camera_compute_axes(c, c->angleX, c->angleY);
     return c;
@@ -92,12 +94,6 @@ d3v_camera_create(vec3 look, double distance, int angleX, int angleY, int ortho)
 void d3v_camera_switch_ortho(camera_t *c)
 {
     c->ortho = !c->ortho;
-    if (!c->ortho) {
-	double d = 1. / c->orthosize;
-	/* glMatrixMode(GL_MODELVIEW); */
-	/* glScaled(d, d, d); */
-	c->orthosize = 1.;
-    }
     c->dirty = 1;
 }
 
@@ -197,6 +193,12 @@ void d3v_camera_rotate(camera_t *c, int angleX, int angleY)
     c->dirty = 1;
 }
 
+void d3v_camera_set_aspect_ratio(camera_t *c, double ratio)
+{
+    c->aspect_ratio = ratio;
+    c->dirty = 1;
+}
+
 
 /**
  * Met à jour la camera.
@@ -210,13 +212,11 @@ int d3v_camera_update(camera_t *c)
 
     // compute PROJ matrix:
     if (c->ortho) {
-	/* glOrtho(-10., 10., -10., 10., -100., 100.); */
-	/* glScaled(c->orthosize, c->orthosize, c->orthosize); */
-
-        // FIXME ortho
-        make_proj_perspective(30.0, 1.0, 0.1, 100.0, &c->proj);
+        double d = c->orthosize * 10;
+        make_proj_orthogonal(-d, d, -d, d, -10*d , 10*d, &c->proj);
     } else {
-        make_proj_perspective(30.0, 1.0, 0.1, 100.0, &c->proj);
+        double ratio = c->aspect_ratio;
+        make_proj_perspective(30.0, ratio, 0.1, 100.0, &c->proj);
     }
 
     // compute VIEW matrix:

@@ -128,6 +128,12 @@ void make_rotation_matrix(vec3 ax, double angle, mat4 *out)
     memcpy(out->m, r, sizeof(out->m));
 }
 
+void make_uniform_scale_matrix(float val, mat4 *out)
+{
+    vec3 v ={val,val,val};
+    make_scale_matrix(v, out);
+}
+
 void make_scale_matrix(vec3 sc, mat4 *out)
 {
     memset(out->m, 0, sizeof(out->m));
@@ -334,6 +340,28 @@ void make_view_look_at(vec3 CENTER, vec3 EYE, vec3 UP, mat4 *out)
     make_translation_matrix(t, &trans);
 
     mm_multiply(&rot, &trans, out);
+}
+
+void make_proj_orthogonal(float left, float right,
+                          float bottom, float top,
+                          float nearVal, float farVal,
+                          mat4 *out)
+{
+
+    float dx = (right-left);
+    float dy = (top-bottom);
+    float dz = (farVal-nearVal);
+    float tx = -(right+left)/dx;
+    float ty = -(top+bottom)/dy;
+    float tz = -(farVal+nearVal)/dz;
+
+    float m[] = {
+        2/dx, 0,    0,     tx,
+        0,    2/dy, 0,     ty,
+        0,    0,    -2/dz, tz,
+        0,    0,    0,      1
+    };
+    memcpy(out->m, m, sizeof(out->m));
 }
 
 void make_proj_perspective(float fov, float aspect, float near, float far, mat4 *out)

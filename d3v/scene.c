@@ -1,9 +1,6 @@
 /**
  * @file display.c
  */
-#ifdef _WIN32
-#include <Windows.h>
-#endif
 #define __USE_XOPEN 1
 
 #include <stdio.h>
@@ -15,6 +12,7 @@
 
 #include "utils/vec.h"
 
+#include "d3v/d3v.h"
 #include "d3v/shader.h"
 #include "d3v/user_callback.h"
 #include "d3v/scene.h"
@@ -41,25 +39,22 @@ scene_t scene;
  * @param y - Position y de la sourie.
  */
 __internal
-void d3v_key(int key, int scancode, int mods, int x, int y)
+void d3v_key(int key, int scancode, int action, int mods, int x, int y)
 {
     if (scene.key_input_callback) {
-        scene.key_input_callback(key, scancode, mods, x, y);
+        scene.key_input_callback(key, scancode, action, mods, x, y);
     }
-    switch (scancode) {
-        case 19: // 'r'
+    switch (key) {
+        case GLFW_KEY_R: // 'r'
             d3v_camera_set_look(scene.camera, &scene.first_look);
             d3v_camera_set_rotate(scene.camera, -90, -90);
             d3v_camera_set_distance(scene.camera, 10.);
             break;
-        case 1: // ESC
-            if (scene.exit_callback) {
-                scene.exit_callback();
-            }
+        case GLFW_KEY_ESCAPE: // ESC
             d3v_request_exit_from_main_loop(); // maybe remove that
             break;
-        case 6: // 5 (with or without SHIFT key)
-        case 76: // 'KP_5'
+        case GLFW_KEY_5: // 5 (with or without SHIFT key)
+        case GLFW_KEY_KP_5: // 'KP_5'
             d3v_camera_switch_ortho(scene.camera);
             break;
     }
@@ -74,13 +69,13 @@ void d3v_key(int key, int scancode, int mods, int x, int y)
  */
 
 __internal
-void d3v_button(int button, int state, int x, int y)
+void d3v_button(int button, int state, int mods, int x, int y)
 {
     scene.xold = x;
     scene.yold = y;
 
     if (scene.mouse_callback) {
-        scene.mouse_callback(button, state, x, y);
+        scene.mouse_callback(button, state, mods, x, y);
     }
 
     switch (button) {
@@ -123,13 +118,16 @@ void d3v_mouse_motion(int x, int y)
  * @param h - Hauteur de la fenêtre.
  */
 __internal
-void d3v_reshape(int w, int h)
+void d3v_reshape(int width, int height)
 {
-    if (w > h) {
-        glViewport((w-h)/2, 0, h, h);
-    } else {
-        glViewport(0, (h-w)/2, w, w);
-    }
+    /* if (w > h) { */
+    /*     glViewport((w-h)/2, 0, h, h); */
+    /* } else { */
+    /*     glViewport(0, (h-w)/2, w, w); */
+    /* } */
+    glViewport(0, 0, width, height);
+    d3v_camera_set_aspect_ratio(scene.camera, (double)width / (double)height);
+//    scene.camera
     // need to recompute perspective projection
     // or ensure aspect ratio cannot be changed
     // because perspective depend on aspect ratio
@@ -230,12 +228,9 @@ void d3v_set_draw_callback(draw_callback_t draw_callback)
     scene.draw_callback = draw_callback;
 }
 
-void d3v_set_exit_callback(exit_callback_t exit_callback)
-{
-    scene.exit_callback = exit_callback;
-}
-
 void d3v_add_object(object_t *obj)
 {
     scene.object_buf[scene.object_count++] = obj;
 }
+
+

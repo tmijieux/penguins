@@ -11,6 +11,10 @@
 #else
 # include <dirent.h>
 # include <dlfcn.h>
+# define min(a,b)                               \
+    ({ __typeof__ (a) _a = (a);                 \
+        __typeof__ (b) _b = (b);                \
+        _a > _b ? _b : _a; })
 #endif
 
 
@@ -25,26 +29,19 @@ static struct client clients[MAX_CLIENT] = { NULL };
 static void client_load_available_clients(void);
 
 /**
- * Informe si le fichier est un .so
+ * Teste si le fichier est un module chargeable
  * @param ep - Fichier à tester.
- * @return int - 1 Si c'est un .so , 0 sinon.
+ * @return int - 1 Si c'est un module , 0 sinon.
  */
 static int is_shared_library(const char *filename)
 {
-    size_t l = strlen(filename);
+    size_t L = strlen(filename);
+    size_t N = strlen(PENG_MODULE_EXTENSION);
 
-#ifdef _WIN32
-    if (l < 5) {
+    if (L <= N) {
         return 0;
     }
-    return (strcmp(".dll", filename + l - 4) == 0);
-#else
-    if (l < 4) {
-        return 0;
-    }
-    return (strcmp(".so", filename + l - 3) == 0);
-
-#endif
+    return (strcmp(PENG_MODULE_EXTENSION, filename + L - N) == 0);
 }
 
 /**
@@ -70,11 +67,7 @@ void client_module_init(void)
 void client_module_exit(void)
 {
     for (int i = 0; i < client_count; i++) {
-#ifdef __unix__
-	    dlclose(clients[i].dl_handle);
-#else
-        FreeLibrary(clients[i].dl_handle);
-#endif
+        peng_free_library(clients[i].handle);
     }
     client_count = 0;
 }
@@ -82,71 +75,16 @@ void client_module_exit(void)
 /**
  * Charger les clients disponibles.
  */
-#ifndef _WIN32
-static void client_load_available_clients(void)
-{
-    if (clients_initialized) {
-        return;
-    }
-    clients_initialized = 1;
-
-    DIR *client_dir = opendir("./clients");
-    if (client_dir == NULL) {
-        perror("(binary dir)/clients/");
-        exit(EXIT_FAILURE);
-    }
-
-    int num_client = 0;
-    struct dirent *ep;
-    while ((ep = readdir(client_dir))) {
-        if (is_shared_library(ep->d_name)) {
-            printf("== client found: %s ==\n", ep->d_name);
-            ++num_client;
-        }
-    }
-    closedir(client_dir);
-
-    client_dir = opendir("./clients");
-    if (client_dir == NULL) {
-        perror("(binary dir)/clients/");
-        exit(EXIT_FAILURE);
-    }
-
-    int i = 0;
-    while ((ep = readdir(client_dir))) {
-        if (!is_shared_library(ep->d_name)) {
-            continue;
-        }
-        Client *cli = &clients[i++];
-        cli->dl_handle = dlopen(ep->d_name, RTLD_NOW);
-        if (cli->dl_handle == NULL) {
-            puts(dlerror());
-            exit(EXIT_FAILURE);
-        }
-        typedef void (*register_t)(struct client_methods*);
-        register_t client_register = dlsym(cli->dl_handle, "client_register");
-        if (client_register == NULL)  {
-            puts(dlerror());
-            exit(EXIT_FAILURE);
-        }
-        client_register(&cli->methods);
-    }
-
-    closedir(client_dir);
-    client_count = num_client;
-}
-#endif  // _WIN32
 
 
 #ifdef _WIN32
 static void iter_on_directory(void (*callback)(int id, const char* path))
 {
-
     WIN32_FIND_DATA FindFileData;
     HANDLE hFind = INVALID_HANDLE_VALUE;
     // DWORD dwError;
 
-    const char dirSpec[200] = ".\\clients\\*";
+    const char *dirSpec = ".\\clients\\*";
     int id = 0;
 
     hFind = FindFirstFile(dirSpec, &FindFileData);
@@ -166,6 +104,27 @@ static void iter_on_directory(void (*callback)(int id, const char* path))
     }
     FindClose(hFind);
 }
+#else
+static void iter_on_directory(void (*callback)(int id, const char *path))
+{
+    DIR *client_dir = opendir("./clients");
+    if (client_dir == NULL) {
+        perror("Could not open directory ./clients/");
+        exit(EXIT_FAILURE);
+    }
+
+    int id = 0;
+    struct dirent *ep;
+    while ((ep = readdir(client_dir)))
+    {
+        if (is_shared_library(ep->d_name))
+        {
+            callback(id++, ep->d_name);
+        }
+    }
+    closedir(client_dir);
+}
+#endif  // _WIN32
 
 static void count_client(int _id, const char*name)
 {
@@ -176,10 +135,11 @@ static void count_client(int _id, const char*name)
 
 static void load_client(int id, const char* name)
 {
-    printf("id=%d file=%s\n", id, name);
-
-
+    #ifdef _WIN32
     const char *basepath = ".\\clients\\";
+    #else
+    const char *basepath = "./clients/";
+    #endif
     char path[512] = { 0 };
     int lenBase = strlen(basepath);
     int lenName = strlen(name);
@@ -189,16 +149,16 @@ static void load_client(int id, const char* name)
     path[511] = 0;
 
     Client* cli = &clients[id];
-    cli->dl_handle = LoadLibrary(path);
-    if (cli->dl_handle == NULL) {
-        printf("Error while loading client module %s\n", path);
+    cli->handle = peng_load_library(path);
+    if (cli->handle == NULL) {
+        peng_lib_handle_error("client module", path);
         exit(EXIT_FAILURE);
     }
 
     typedef void (*register_t)(struct client_methods*);
-    register_t client_register = GetProcAddress(cli->dl_handle, "client_register");
+    register_t client_register = peng_get_proc_address(cli->handle, "client_register");
     if (client_register == NULL) {
-        printf("Error while loading function `client_register` for module %s\n", path);
+        peng_lib_handle_error("function `client_register` for module", path);
         exit(EXIT_FAILURE);
     }
     client_register(&cli->methods);
@@ -215,7 +175,6 @@ static void client_load_available_clients(void)
     iter_on_directory(load_client);
 
 }
-#endif
 
 /**
  * Obtenirle nombre de clients chargés.
@@ -237,7 +196,8 @@ const char *client_get_name(int id)
     return clients[id].methods.name;
 }
 
-Client *client_get(int id) {
+Client *client_get(int id)
+{
     if (id >= MAX_CLIENT) {
         return NULL;
     }

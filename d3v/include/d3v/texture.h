@@ -1,7 +1,6 @@
 #ifndef D3V_TEXTURE_H
 #define D3V_TEXTURE_H
 
-struct texture;
 typedef struct texture texture_t;
 
 texture_t *texture_load(const char *path);

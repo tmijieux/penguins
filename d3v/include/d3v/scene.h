@@ -21,7 +21,6 @@ typedef struct scene {
 
     vec3 first_look;
 
-    exit_callback_t exit_callback;
     draw_callback_t draw_callback;
     mouse_callback_t mouse_callback;
     key_input_callback_t key_input_callback;

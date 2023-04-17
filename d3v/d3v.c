@@ -4,7 +4,6 @@
 
 #include "penguins_opengl.h"
 
-typedef void* (* GLADloadproc)(const char *name);
 #ifdef _WIN32
 # define sleep(x) Sleep( (int)((x) * 1000))
 #else
@@ -75,7 +74,8 @@ static int need_redraw = 1;
 
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    glViewport(0, 0, width, height);
+    //glViewport(0, 0, width, height);
+    d3v_reshape(width, height);
     // call d3v_reshape
 }
 
@@ -118,10 +118,9 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action, 
 {
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
-    printf("key event key=%d scancode=%d action=%d mods=%d\n", key, scancode, action, mods);
 
     if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-        d3v_key(key, scancode, mods, xpos, ypos);
+        d3v_key(key, scancode, action, mods, xpos, ypos);
     }
 
     need_redraw = 1;
@@ -141,7 +140,7 @@ static void mouse_button_callback(GLFWwindow* window, int button, int action, in
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
 
-    d3v_button(button, action, (int)xpos, (int)ypos);
+    d3v_button(button, action, mods, (int)xpos, (int)ypos);
     /* if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) */
     /*     popup_menu(); */
 }

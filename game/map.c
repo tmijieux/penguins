@@ -2,23 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef _WIN32
-# include <Windows.h>
-#else
-# include <dlfcn.h>
-#endif
-
+#include "utils/graph.h"
+#include "utils/module_loading.h"
 
 #include "penguins/map_interface.h"
 #include "server/map.h"
-#include "utils/graph.h"
 
-#ifdef _WIN32
-HINSTANCE handle;
-#else
-static void* handle;
 
-#endif
+peng_libhandle_t handle;
 struct map_methods map;
 
 /**
@@ -29,35 +20,18 @@ void map_module_load(const char *map_path)
 {
     typedef void (*register_t)(struct map_methods*);
     register_t map_register;
-    #ifdef _WIN32
-    handle = LoadLibrary(map_path);
-    if (handle == NULL) {
-        char buf[256] = {0};
-        GetCurrentDirectory(255, buf);
-        printf("Error when loading library %s cur_dir=%s\n", map_path, buf);
-        exit(EXIT_FAILURE);
-    }
-    #else
-    handle = dlopen(map_path, RTLD_NOW);
-    if (handle == NULL) {
-        puts(dlerror());
-        exit(EXIT_FAILURE);
-    }
-    #endif
 
-    #ifdef _WIN32
-    map_register = GetProcAddress(handle, "map_register");
-    if (map_register == NULL) {
-        printf("Error when loading function map_register\n");
+    handle = peng_load_library(map_path);
+    if (handle == NULL) {
+        peng_lib_handle_error("library", map_path);
         exit(EXIT_FAILURE);
     }
-    #else
-    map_register = dlsym(handle, "map_register");
+
+    map_register = peng_get_proc_address(handle, "map_register");
     if (map_register == NULL) {
-        puts(dlerror());
+        peng_lib_handle_error("function", "map_register");
         exit(EXIT_FAILURE);
     }
-    #endif
 
     map_register(&map);
 }
@@ -71,9 +45,6 @@ void map_module_unload(void)
         map.exit();
     }
     memset(&map, 0, sizeof(map));
-#ifdef __unix__
-    dlclose(handle);
-#else
-    FreeLibrary(handle);
-#endif
+    peng_free_library(handle);
+    handle = NULL;
 }

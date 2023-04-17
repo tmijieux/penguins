@@ -1,13 +1,9 @@
 /**
  * @file texture.c
  */
-#ifdef _WIN32
-#include <Windows.h>
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
-// #include <jpeglib.h> // FIXME
 #include <fcntl.h>
 
 #include "penguins_opengl.h"
@@ -53,11 +49,11 @@ texture_load_jpeg(const char *path, int *width_, int *height_)
 /**
  * Chargement d'un texture.
  * @param path - Chemin d'accès du fichier à charger.
- * @return struct texture * - Texture chargé.
+ * @return texture_t * - Texture chargé.
  */
-struct texture *texture_load(const char *path)
+texture_t *texture_load(const char *path)
 {
-    struct texture *t = malloc(sizeof(*t));
+    texture_t *t = malloc(sizeof(*t));
     glGenTextures(1, &t->tex_id);
     glBindTexture(GL_TEXTURE_2D, t->tex_id);
 
@@ -79,7 +75,7 @@ struct texture *texture_load(const char *path)
  * @param t - La texture.
  * @return GLuint - Identifiant de la texture.
  */
-GLuint texture_get_id(struct texture *t)
+GLuint texture_get_id(texture_t *t)
 {
     return t->tex_id;
 }
@@ -88,7 +84,7 @@ GLuint texture_get_id(struct texture *t)
  * Libérer la mémoire occupé par la texture.
  * @param t - La texture.
  */
-void texture_free(struct texture *t)
+void texture_free(texture_t *t)
 {
     if (t == NULL)
 	return;

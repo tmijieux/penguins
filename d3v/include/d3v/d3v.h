@@ -3,8 +3,8 @@
 
 #include "penguins_opengl.h"
 
-#include <utils/vec.h>
-#include <utils/symbol_visibility.h>
+#include "utils/vec.h"
+#include "utils/symbol_visibility.h"
 
 
 #define MY_GL_ERROR(err)  printf("error: %s\n\n", gluErrorString((err)))
