@@ -89,7 +89,7 @@ static void iter_on_directory(void (*callback)(int id, const char* path))
 
     hFind = FindFirstFile(dirSpec, &FindFileData);
     if (hFind == INVALID_HANDLE_VALUE) {
-        perror("Could not open client player module direction `./clients`");
+        perror("Could not open client player module directory `./clients`");
         exit(EXIT_FAILURE);
     }
     if (is_shared_library(FindFileData.cFileName))

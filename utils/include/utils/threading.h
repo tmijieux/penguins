@@ -12,7 +12,7 @@
 # define peng_mutex_t CRITICAL_SECTION
 
 # define peng_mutex_init(x) InitializeCriticalSection((x))
-# define peng_mutex_destroy(x) DestroyCriticalSection((x))
+# define peng_mutex_destroy(x) DeleteCriticalSection((x))
 # define peng_mutex_lock(x) EnterCriticalSection((x))
 # define peng_mutex_trylock(x) TryEnterCriticalSection((x))
 # define peng_mutex_unlock(x) LeaveCriticalSection((x))
