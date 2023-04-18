@@ -30,7 +30,7 @@
 // thread
 #ifdef _WIN32
 # define peng_thread_t HANDLE
-# define peng_thread_create(x, start, args) (x) = CreateThread(NULL,0, (start), (args), 0, &ThreadId)
+# define peng_thread_create(x, start, args, id) (x) = CreateThread(NULL,0, (start), (args), 0, (id))
 # define peng_thread_exit(x, y) ExitThread((x))
 # define peng_thread_join(x, y) do {                   \
         WaitForSingleObject((x), INFINITE);     \
@@ -39,7 +39,7 @@
 
 #else
 # define peng_thread_t pthread_t
-# define peng_thread_create(x, start, args) pthread_create(&(x), NULL, (start), (args))
+# define peng_thread_create(x, start, args, id) pthread_create(&(x), NULL, (start), (args))
 # define peng_thread_exit(x) pthread_exit((x))
 # define peng_thread_join(x, y) pthread_join((x), (y))
 #endif

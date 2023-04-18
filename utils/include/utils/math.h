@@ -13,8 +13,9 @@ float vec3_dot(const vec3 *v1, const vec3 *v2);
 
 double radian_to_degree(double radian);
 double degree_to_radian(double degree);
+double angle_normalize(double degree);
 
-double angle_rotation_pingouin(const vec3 *src, const vec3 *dst);
+float vec3_angle_zx(const vec3 *src, const vec3 *dst);
 
 void make_rotation_matrix(vec3 ax, double angle, mat4 *out);
 void make_translation_matrix(vec3 t, mat4 *out);

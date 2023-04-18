@@ -71,6 +71,18 @@ float vec3_dot(const vec3 *u, const vec3 *v)
 }
 
 
+double angle_normalize(double degree)
+{
+    while (degree < 0.0f) {
+        degree += 360.0f;
+    }
+    while (degree >= 360.0f) {
+        degree -= 360.0f;
+    }
+    return degree;
+}
+
+
 
 /**
  * Convertion radian -> degrée.
@@ -98,13 +110,19 @@ double degree_to_radian(double degree)
  * @param dst - Destination du vecteur.
  * @return double - Angle en degrée.
  */
-double angle_rotation_pingouin(const vec3 *src, const vec3 *dst)
+float vec3_angle_zx(const vec3 *src, const vec3 *dst)
 {
-    vec3 a = { dst->x-src->x, 0., dst->z-src->z };
-    if (a.x == 0. && a.z == 0.)
-        return 400.;
-    vec3_normalize(&a);  double s = -a.x;
-    return radian_to_degree( (s < 0 ? 1. : -1.) * acos(a.z));
+    float dx = dst->x - src->x;
+    float dz = dst->z - src->z;
+
+    if (fabs(dx) < 1e-4 && fabs(dz) < 1e-4) {
+        return 0.0;
+    }
+
+    vec3 a = {dx, 0, dz};
+    vec3_normalize(&a);
+    double s = -a.x;
+    return angle_normalize(radian_to_degree((s < 0 ? 1. : -1.) * acos(a.z)));
 }
 
 /**

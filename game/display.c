@@ -43,9 +43,8 @@ penguin_add_job_t penguin_add_jobs[MAX_ADD_PENGUIN_JOB];
  * Gestion du thread.
  */
 struct _display_thread {
-    peng_thread_t t;
-    peng_mutex_t m;
-    peng_mutex_t penguin_add_mutex;
+    peng_thread_t thread;
+    peng_mutex_t add_penguin_mutex;
     int ThreadId;
 };
 static struct _display_thread display_thread;
@@ -64,66 +63,75 @@ enum SENS {
  * Lis et programme les animations à effectuer.
  * @param s - Sens de la lecture.
  */
-static void display_schedule_animations(enum SENS s)
+static void schedule_animations(enum SENS s)
 {
     int tileSrc = (s == S_FORWARD) ? record_get_current_src(Display.records)
         : record_get_rewind_src(Display.records);
     int tileDest = (s == S_FORWARD) ? record_get_current_dest(Display.records)
         : record_get_rewind_dest(Display.records);
 
-    int setPenguin = (tileSrc == -1);
-    if (setPenguin) {
+    int is_place_penguin = (tileSrc == -1);
+    if (is_place_penguin) {
         tileSrc = tileDest;
     }
 
-    int penguin = Display.tile_penguins_id[tileSrc];
+    int penguin_id = Display.tile_penguins_id[tileSrc];
 
-    if (!setPenguin) {
-        setPenguin = (tileDest == -1 && s == S_REWIND);
+    if (!is_place_penguin) {
+        is_place_penguin = (tileDest == -1 && s == S_REWIND);
     }
-    if (setPenguin && penguin != -1) {
+    if (is_place_penguin && penguin_id != -1) {
         if (anim_prepare()) {
-            anim_new_movement(Display.penguin_objects[penguin], 0, 1);
+            anim_new_movement(Display.penguin_objects[penguin_id], ANIM_O_PENGUIN, 1);
             anim_set_hide(s != S_FORWARD);
             anim_push_movement();
             anim_launch();
         }
-    } else {
-        // Calculer le déplacement
+    }
+    else
+    {
+        // regular move
         if (anim_prepare()) {
-            if (penguin != -1) {
-                vec3 tile_pos;
-                vec3 pen_pos;
+            if (penguin_id != -1) {
+                vec3 dst;
+                vec3 src;
+                object_t *penguin = Display.penguin_objects[penguin_id];
+                object_t *tile = Display.tile_objects[tileDest];
 
-                d3v_object_get_position(Display.tile_objects[tileDest], &tile_pos);
-                d3v_object_get_position(Display.penguin_objects[penguin], &pen_pos);
+                d3v_object_get_position(tile, &dst);
+                d3v_object_get_position(penguin, &src);
 
-                float angle = angle_rotation_pingouin(&pen_pos, &tile_pos);
-                int nb_move = NB_MOVE;
-                if(angle <= 360) {
-                    nb_move = NB_MOVE / 2;
-                }
+                float angle = vec3_angle_zx(&src, &dst);
+                float dy = dst.y - dst.y;
 
-                anim_new_movement(Display.penguin_objects[penguin], 0, nb_move);
-                if (angle > 360) {
-                    anim_set_translation(tile_pos);
-                }
-                anim_set_rotation(angle);
-
-                if (angle <= 360) {
+                if (fabs(angle) < 1e-4 && fabs(dy) > 1e-4) {
+                    // too small rotation but large distance on Y axes
+                    // => vertical translation with 360 flip!
+                    anim_new_movement(penguin, ANIM_O_PENGUIN, NB_MOVE/2);
+                    anim_set_flip();
+                    anim_set_translation(dst);
                     anim_push_movement();
-                    anim_new_movement(Display.penguin_objects[penguin], 0, NB_MOVE);
-                    anim_set_translation(tile_pos);
                 }
-                anim_push_movement();
+                else
+                {
+                    if (fabs(angle) > 1e-4) {// when angle is 0, skip scheduling the rotation
+                        // => fast rotation to face the direction whe are going in
+                        anim_new_movement(penguin, ANIM_O_PENGUIN, NB_MOVE/2);
+                        anim_set_rotation(angle);
+                        anim_push_movement();
+                    }
+
+                    // not a vertical movement
+                    // add a horizontal translation after the eventual rotation
+                    anim_new_movement(penguin, ANIM_O_PENGUIN, NB_MOVE);
+                    anim_set_translation(dst);
+                    anim_push_movement();
+
+                }
             }
-            int tile = -1;
-            if (s == S_FORWARD) {
-                tile = tileSrc;
-            } else {
-                tile = tileDest;
-            }
-            anim_new_movement(Display.tile_objects[tile], 1, 1);
+            int tile_id = (s == S_FORWARD) ? tileSrc : tileDest;
+            object_t *tile = Display.tile_objects[tile_id];
+            anim_new_movement(tile, ANIM_O_TILE, 1);
             anim_set_hide(s == S_FORWARD);
             anim_push_movement();
             anim_launch();
@@ -132,7 +140,7 @@ static void display_schedule_animations(enum SENS s)
 
     if (tileSrc >= 0 && tileDest >= 0) {
         Display.tile_penguins_id[tileSrc] = -1;
-        Display.tile_penguins_id[tileDest] = penguin;
+        Display.tile_penguins_id[tileDest] = penguin_id;
     }
 }
 
@@ -152,7 +160,7 @@ static void display_read_next_move(enum SENS s)
 
     if (newMove) {
         d3v_request_animation_frame();
-        display_schedule_animations(s);
+        schedule_animations(s);
     }
 }
 
@@ -254,7 +262,7 @@ static int display_add_penguin_impl(int tileid, int playerid)
 
 static void handle_new_penguins()
 {
-    if (peng_mutex_trylock(&display_thread.penguin_add_mutex))
+    if (peng_mutex_trylock(&display_thread.add_penguin_mutex))
     {
         while (nb_pending_add_penguin_job > 0)
         {
@@ -263,7 +271,7 @@ static void handle_new_penguins()
             --nb_pending_add_penguin_job;
         }
 
-        peng_mutex_unlock(&display_thread.penguin_add_mutex);
+        peng_mutex_unlock(&display_thread.add_penguin_mutex);
     }
 }
 
@@ -271,8 +279,8 @@ static void draw(void)
 {
     handle_new_penguins();
 
-    int nextMove = !anim_run();
-    if (Display.autoplay && nextMove)
+    int animation_still_running = anim_run();
+    if (Display.autoplay && !animation_still_running)
     {
         display_read_next_move(S_FORWARD);
     }
@@ -504,9 +512,9 @@ int display_add_penguin(int tileid, int playerid)
         .tileid = tileid
     };
 
-    peng_mutex_lock(&display_thread.penguin_add_mutex);
+    peng_mutex_lock(&display_thread.add_penguin_mutex);
     penguin_add_jobs[nb_pending_add_penguin_job++] = job;
-    peng_mutex_unlock(&display_thread.penguin_add_mutex);
+    peng_mutex_unlock(&display_thread.add_penguin_mutex);
     return 0;
 }
 
@@ -682,7 +690,7 @@ static void setup_directions_links(void)
 /*** STARTS *****/
 static void* display_thread_main(void *args)
 {
-    peng_mutex_init(&display_thread.penguin_add_mutex);
+    peng_mutex_init(&display_thread.add_penguin_mutex);
     init_anim_module();
     init_display_module();
 
@@ -728,7 +736,7 @@ static void* display_thread_main(void *args)
         printf("not currently in  mouseclick\n");
     }
 
-    peng_mutex_destroy(&display_thread.penguin_add_mutex);
+    peng_mutex_destroy(&display_thread.add_penguin_mutex);
     peng_thread_exit(DISPLAY_THREAD_RETVAL);
 }
 
@@ -742,15 +750,11 @@ void create_display_thread(int nb_dimension, int nb_tile, int nb_penguin)
     Display.nb_penguin = nb_penguin;
     Display.nb_dimension = nb_dimension;
 
-    #ifdef __unix__
-    pthread_create(&display_thread.t, NULL, &display_thread_main, NULL);
-    #else
-    display_thread.t = CreateThread(
-        NULL, 0,
-        display_thread_main, NULL,
-        0, &display_thread.ThreadId
+    peng_thread_create(
+        display_thread.thread,
+        &display_thread_main, NULL,
+        &display_thread.ThreadId
     );
-    #endif
 }
 
 int join_display_thread(void)
@@ -758,11 +762,7 @@ int join_display_thread(void)
     void *retval = NULL;
 
     puts("Waiting for the user to end the display ...");
-    #ifdef __unix__
-    pthread_join(display_thread.t, &retval);
-    #else
-    WaitForSingleObject(display_thread.t, INFINITE);
-    #endif
+    peng_thread_join(display_thread.thread, &retval);
     fprintf(stderr, "exiting display thread!\n");
 
     if (retval == DISPLAY_THREAD_RETVAL) {

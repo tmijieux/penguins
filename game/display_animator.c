@@ -1,70 +1,68 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 
 #include "utils/vec.h"
+#include "utils/math.h"
 #include "d3v/d3v.h"
 #include "d3v/object.h"
 #include "display/animator.h"
 
-#define MAX_ANIMATION 10
+#define MAX_ANIMATION_STEP 20
+#define max(x,y) ({                             \
+        __typeof__(x) _x = (x);                 \
+        __typeof__(y) _y = (y);                 \
+        _x > _y ? _x : _y;})
 
 /**
  * Description d'une animation.
  */
-struct animation {
+typedef struct animation_step {
     struct object *obj; // targeted object
-    int type; //0=penguin, 1=tile
-    struct vec3 trans;// elementary translation vector at each frame
-    struct vec3 transDest; // final position that should eventually be adopted by the object
-    int doTrans; //1= animation step must translate the object
-    float rot; // elementary rotation angle at each frame
-    float rotDest; // final rotation angle that should eventually be adopted by the object
-    int doRot; // 1= animation step must rotate the object
-    int total_move; // animation duration in frame
-    int current_move; // current frame of animation (between 0 and total_move)
-    int hide;
+    anim_object_type_t type; //0=penguin, 1=tile
+
+    int shouldTranslate; //1= animation step must translate the object
+    int shouldRotate; // 1= animation step must rotate the object
+    int shouldFlip; // wwhoooo 360 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    int shouldHide;
     // 1 means object should be hidden when animation is executed
     // (and remain hidden afterwards)
     // 0 means object should be revealed when animation is executed
     // (and remains visible afterwards)
-};
+
+    float stepAngle; // elementary rotation angle at each frame
+    float finalAngle; // final rotation angle that should eventually be adopted by the object
+    vec3 finalPosition; // final position that should eventually be adopted by the object
+
+    int frame_length; // animation duration in frame
+    int current_frame; // current frame of animation (between 0 and frame_length)
+} animation_step_t;
 
 /**
  * Gestion des animations.
  */
-struct animator {
-    struct animation animations[MAX_ANIMATION];
-    int size; // number of animation
-    int capacity; // maximum number of animation
-    int pos; // current animation that is executed
-    int animationLocked;
+typedef struct animation {
+    animation_step_t steps[MAX_ANIMATION_STEP];
+    int nb_step; // number of animation
+    int cur_step; // current animation that is executed
+    int can_edit_animation;
     // 0=animation can run, but cannot be edited (all edition methods will fail)
     // 1=animation cannot run and is in preparation phase
 
-    int addLocked;
+    int animation_is_running;
     // 1=animation is currently running and cannot be locked for modification
-};
-static struct animator animator;
+} animation_t;
+static animation_t animation;
 
 /**
  * Initialisation du module animation.
  */
 void init_anim_module(void)
 {
-    animator.size = 0;
-    animator.capacity = MAX_ANIMATION;
-    animator.pos = 0;
-    animator.animationLocked = 0;
-    animator.addLocked = 0;
-}
-
-/**
- * Initialisation d'un vec3 à 0,0,0.
- * @param - Vec3 à initialiser.
- */
-void anim_init_vec3(vec3 * v)
-{
-    *v = (vec3) {0};
+    animation.nb_step = 0;
+    animation.cur_step = 0;
+    animation.can_edit_animation = 0;
+    animation.animation_is_running = 0;
 }
 
 /**
@@ -73,10 +71,10 @@ void anim_init_vec3(vec3 * v)
  */
 int anim_prepare(void)
 {
-    if (animator.addLocked || animator.size == animator.capacity) {
+    if (animation.animation_is_running || animation.nb_step == MAX_ANIMATION_STEP) {
         return 0;
     }
-    animator.animationLocked = 1;
+    animation.can_edit_animation = 1;
     return 1;
 }
 
@@ -85,8 +83,8 @@ int anim_prepare(void)
  */
 void anim_launch(void)
 {
-    animator.animationLocked = 0;
-    animator.addLocked = 1;
+    animation.can_edit_animation = 0;
+    animation.animation_is_running = 1;
 }
 
 /**
@@ -96,27 +94,25 @@ void anim_launch(void)
  * @param total - Durée total du mouvement. (frame)
  * @return int - 1 Si l'ajout a fonctionné.
  */
-int anim_new_movement(void *obj, int type, int total)
+int anim_new_movement(void *obj, anim_object_type_t type, int length)
 {
-    if (!animator.animationLocked) {
+    if (!animation.can_edit_animation) {
         return 0;
     }
-    int s = animator.size;
-    struct animation *anim = &animator.animations[s];
+    int s = animation.nb_step;
+    animation_step_t *step = &animation.steps[s];
+    memset(step, 0, sizeof *step);
 
-    anim->obj = obj;
-    anim->type = type;
-    anim->total_move = total;
-    anim->current_move = 0;
-    anim->hide = -1;
-
-    anim_init_vec3(&anim->trans);
-    anim_init_vec3(&anim->transDest);
-
-    anim->rot = 0;
-    anim->rotDest = 0;
-    anim->doRot = 0;
-    anim->doTrans = 0;
+    step->obj = obj;
+    step->type = type;
+    step->frame_length = length;
+    step->current_frame = 0;
+    step->shouldRotate = 0;
+    step->shouldTranslate = 0;
+    step->shouldFlip = 0;
+    step->shouldHide = 0;
+    step->finalPosition = (vec3){0,0,0};
+    step->finalAngle = 0;
     return 1;
 }
 
@@ -127,21 +123,39 @@ int anim_new_movement(void *obj, int type, int total)
  */
 int anim_set_translation(vec3 dest)
 {
-    if (!animator.animationLocked) {
+    if (!animation.can_edit_animation) {
         return 0;
     }
 
-    int s = animator.size;
-    vec3 pen_pos;
-    d3v_object_get_position(animator.animations[s].obj, &pen_pos);
+    int s = animation.nb_step;
 
-    int total = animator.animations[s].total_move;
-    animator.animations[s].trans.x = (dest.x - pen_pos.x) / total;
-    animator.animations[s].trans.y = (dest.y - pen_pos.y) / total;
-    animator.animations[s].trans.z = (dest.z - pen_pos.z) / total;
+    animation_step_t *step = &animation.steps[s];
+    step->finalPosition = dest;
+    step->shouldTranslate = 1;
 
-    animator.animations[s].transDest = dest;
-    animator.animations[s].doTrans = 1;
+    return 1;
+}
+
+
+int anim_set_flip(void)
+{
+    // special case where penguin is going up or down
+    // make it do a 360 roll on itself !!!! because why not
+
+   if (!animation.can_edit_animation) {
+        return 0;
+    }
+    int s = animation.nb_step;
+    animation_step_t *step = &(animation.steps[s]);
+
+    vec3 src;
+    d3v_object_get_position(step->obj, &src);
+    double height = step->finalPosition.y - src.y;
+    step->stepAngle = height * (360.0 / step->frame_length);
+
+    step->finalAngle = d3v_object_get_orientationY(step->obj);
+    step->shouldFlip = 1;
+    step->shouldRotate = 0;
 
     return 1;
 }
@@ -153,22 +167,18 @@ int anim_set_translation(vec3 dest)
  */
 int anim_set_rotation(float dest)
 {
-    if (!animator.animationLocked) {
+   if (!animation.can_edit_animation) {
         return 0;
     }
-    int s = animator.size;
-    struct animation *animation = &(animator.animations[s]);
-    if (dest > 360) {
-        vec3 peng_pos;
-        d3v_object_get_position(animation->obj, &peng_pos);
-        animation->rot = (360.0 * (animation->transDest.y - peng_pos.y) / animation->total_move);
-        dest = d3v_object_get_orientationY(animation->obj);
-    } else {
-        animation->rot = (dest - d3v_object_get_orientationY(animation->obj))  / animation->total_move;
-    }
+    int s = animation.nb_step;
+    animation_step_t *step = &(animation.steps[s]);
 
-    animation->rotDest = dest;
-    animation->doRot = 1;
+    step->finalAngle = angle_normalize(dest);
+    step->shouldRotate = 1;
+    step->shouldFlip = 0;
+    float cur = d3v_object_get_orientationY(step->obj);
+    printf("SETUP ROTATION finalAngle=%f currentAngle=%f\n", step->finalAngle, cur);
+
     return 1;
 }
 
@@ -177,13 +187,13 @@ int anim_set_rotation(float dest)
  * @param hide - 1 Pour cacher l'element, 0 pour le dévoiler.
  * @return int - 1 Si l'enregistrement a fonctionné.
  */
-int anim_set_hide(int hide)
+int anim_set_hide(int shouldHide)
 {
-    if (!animator.animationLocked) {
+    if (!animation.can_edit_animation) {
         return 0;
     }
 
-    animator.animations[animator.size].hide = hide;
+    animation.steps[animation.nb_step].shouldHide = shouldHide;
     return 1;
 }
 
@@ -193,10 +203,10 @@ int anim_set_hide(int hide)
  */
 int anim_push_movement(void)
 {
-    if (!animator.animationLocked) {
+    if (!animation.can_edit_animation) {
         return 0;
     }
-    animator.size++;
+    animation.nb_step++;
     return 1;
 }
 
@@ -206,65 +216,98 @@ int anim_push_movement(void)
  */
 int anim_run(void)
 {
-    if (animator.animationLocked || animator.pos == animator.size) {
+    if (animation.can_edit_animation || animation.nb_step == 0) {
         return 0;
     }
 
-    animator.addLocked = 1;
-    struct animation *anim = &animator.animations[animator.pos];
-    if (anim->type == 0)
+    animation.animation_is_running = 1;
+    animation_step_t *step = &animation.steps[animation.cur_step];
+    if (step->type == ANIM_O_PENGUIN)
     {
-        if (anim->hide == 1) {
-            d3v_object_hide(anim->obj);
-        } else if (anim->hide == 0) {
-            d3v_object_reveal(anim->obj);
+        if (step->shouldHide) {
+            d3v_object_hide(step->obj);
+        } else {
+            d3v_object_reveal(step->obj);
         }
 
-        if (anim->doTrans) {
-            vec3 pen_pos;
-            d3v_object_get_position(anim->obj, &pen_pos);
+        if (step->shouldTranslate) {
+            vec3 src;
+            vec3 dst = step->finalPosition;
+            d3v_object_get_position(step->obj, &src);
+
+            float nb_frame = max(step->frame_length - step->current_frame, 1);
+            vec3 d = {dst.x - src.x, dst.y - src.y, dst.z - src.z};
+            d.x /= nb_frame;
+            d.y /= nb_frame;
+            d.z /= nb_frame;
+
             vec3 dest = {
-                pen_pos.x + anim->trans.x,
-                pen_pos.y + anim->trans.y,
-                pen_pos.z + anim->trans.z
+                src.x + d.x,
+                src.y + d.y,
+                src.z + d.z
             };
-            d3v_object_set_position(anim->obj, dest);
+            d3v_object_set_position(step->obj, dest);
         }
 
-        if (anim->doRot) {
-            float rot = d3v_object_get_orientationY(anim->obj) + anim->rot;
-            d3v_object_set_orientationY(anim->obj, rot);
+        if (step->shouldRotate) {
+            float cur = angle_normalize(d3v_object_get_orientationY(step->obj));
+            float dest = angle_normalize(step->finalAngle);
+            float da = dest - cur;
+            int nb_step = max(step->frame_length - step->current_frame, 1);
+            if (da > 180) {
+                da = da - 360; // shortest path: if more than 180 go the other way
+            }
+            else if (da < -180) {
+                da = 360 + da; // shortest path: if more than 180 go the other way
+            }
+            printf("ROT length=%d cur=%d da=%f\n", step->frame_length, step->current_frame, da);
+            da /= nb_step;
+
+            float rot = angle_normalize(cur + da);
+            d3v_object_set_orientationY(step->obj, rot);
+        }
+        if (step->shouldFlip) {
+            float cur = d3v_object_get_orientationY(step->obj);
+            float rot = angle_normalize(cur + step->stepAngle);
+            d3v_object_set_orientationY(step->obj, rot);
         }
 
-        ++anim->current_move;
-        if (anim->current_move >= anim->total_move)
+        ++step->current_frame;
+        if (step->current_frame >= step->frame_length)
         {
-            if (anim->doTrans) {
-                d3v_object_set_position(anim->obj, anim->transDest);
+            if (step->shouldTranslate) {
+                d3v_object_set_position(step->obj, step->finalPosition);
             }
-            if (anim->doRot) {
-                d3v_object_set_orientationY(anim->obj, anim->rotDest);
+            if (step->shouldRotate || step->shouldFlip) {
+                d3v_object_set_orientationY(step->obj, step->finalAngle);
             }
         }
-    } else if (anim->type == 1) {
-        if (anim->hide == 1) {
-            d3v_object_hide(anim->obj);
+    }
+    else if (step->type == ANIM_O_TILE) {
+        if (step->shouldHide == 1) {
+            d3v_object_hide(step->obj);
         }
-        else if (anim->hide == 0) {
-            d3v_object_reveal(anim->obj);
+        else if (step->shouldHide == 0) {
+            d3v_object_reveal(step->obj);
         }
-        ++anim->current_move;
+        ++step->current_frame;
     }
 
-    if (anim->current_move >= anim->total_move) {
-        ++animator.pos;
-        if (animator.pos == animator.size) {
-            animator.pos = 0;
-            animator.size = 0;
-            animator.addLocked = 0;
+
+    d3v_request_animation_frame();
+
+    // transition to next step
+    if (step->current_frame >= step->frame_length) {
+        ++animation.cur_step;
+        if (animation.cur_step == animation.nb_step) {
+            // if all steps are finished, reset the animation
+            printf("FINISHED");
+            animation.cur_step = 0;
+            animation.nb_step = 0;
+            animation.animation_is_running = 0;
             return 0;
         }
     }
-    d3v_request_animation_frame();
+
     return 1;
 }

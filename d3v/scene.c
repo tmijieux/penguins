@@ -158,8 +158,7 @@ void d3v_scene_draw()
         for_each_shader_program(draw_camera, NULL);
     }
 
-    // all lighting is currently
-    // hardcoded in shader code
+    // all lighting is currently hardcoded in shader code
     // consider adding uniform to do materials...
     /* d3v_light_update(scene.light); */
 
