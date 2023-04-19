@@ -9,10 +9,12 @@
 #include "display/animator.h"
 
 #define MAX_ANIMATION_STEP 20
-#define max(x,y) ({                             \
-        __typeof__(x) _x = (x);                 \
-        __typeof__(y) _y = (y);                 \
-        _x > _y ? _x : _y;})
+#ifndef _WIN32
+#define max(x,y) ({                              \
+        __typeof__((x)) _x = (x);                 \
+        __typeof__((y)) _y = (y);                 \
+        _x > _y ? _x : _y; })
+#endif
 
 /**
  * Description d'une animation.
@@ -30,7 +32,6 @@ typedef struct animation_step {
     // 0 means object should be revealed when animation is executed
     // (and remains visible afterwards)
 
-    float stepAngle; // elementary rotation angle at each frame
     float finalAngle; // final rotation angle that should eventually be adopted by the object
     vec3 finalPosition; // final position that should eventually be adopted by the object
 
@@ -151,7 +152,6 @@ int anim_set_flip(void)
     vec3 src;
     d3v_object_get_position(step->obj, &src);
     double height = step->finalPosition.y - src.y;
-    step->stepAngle = height * (360.0 / step->frame_length);
 
     step->finalAngle = d3v_object_get_orientationY(step->obj);
     step->shouldFlip = 1;
@@ -177,8 +177,6 @@ int anim_set_rotation(float dest)
     step->shouldRotate = 1;
     step->shouldFlip = 0;
     float cur = d3v_object_get_orientationY(step->obj);
-    printf("SETUP ROTATION finalAngle=%f currentAngle=%f\n", step->finalAngle, cur);
-
     return 1;
 }
 
@@ -260,15 +258,15 @@ int anim_run(void)
             else if (da < -180) {
                 da = 360 + da; // shortest path: if more than 180 go the other way
             }
-            printf("ROT length=%d cur=%d da=%f\n", step->frame_length, step->current_frame, da);
             da /= nb_step;
 
             float rot = angle_normalize(cur + da);
             d3v_object_set_orientationY(step->obj, rot);
         }
         if (step->shouldFlip) {
-            float cur = d3v_object_get_orientationY(step->obj);
-            float rot = angle_normalize(cur + step->stepAngle);
+            float ratio = (float)step->current_frame / (float)step->frame_length;
+            float wantedAngle = step->finalAngle + ratio * 1.5 * 360;
+            float rot = angle_normalize(wantedAngle);
             d3v_object_set_orientationY(step->obj, rot);
         }
 
@@ -301,7 +299,6 @@ int anim_run(void)
         ++animation.cur_step;
         if (animation.cur_step == animation.nb_step) {
             // if all steps are finished, reset the animation
-            printf("FINISHED");
             animation.cur_step = 0;
             animation.nb_step = 0;
             animation.animation_is_running = 0;

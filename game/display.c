@@ -102,7 +102,7 @@ static void schedule_animations(enum SENS s)
                 d3v_object_get_position(penguin, &src);
 
                 float angle = vec3_angle_zx(&src, &dst);
-                float dy = dst.y - dst.y;
+                float dy = dst.y - src.y;
 
                 if (fabs(angle) < 1e-4 && fabs(dy) > 1e-4) {
                     // too small rotation but large distance on Y axes
