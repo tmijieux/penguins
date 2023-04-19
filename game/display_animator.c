@@ -4,17 +4,12 @@
 
 #include "utils/vec.h"
 #include "utils/math.h"
+#include "utils/utils.h"
 #include "d3v/d3v.h"
 #include "d3v/object.h"
 #include "display/animator.h"
 
 #define MAX_ANIMATION_STEP 20
-#ifndef _WIN32
-#define max(x,y) ({                              \
-        __typeof__((x)) _x = (x);                 \
-        __typeof__((y)) _y = (y);                 \
-        _x > _y ? _x : _y; })
-#endif
 
 /**
  * Description d'une animation.

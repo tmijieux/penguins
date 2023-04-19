@@ -11,15 +11,12 @@
 #else
 # include <dirent.h>
 # include <dlfcn.h>
-# define min(a,b)                               \
-    ({ __typeof__ (a) _a = (a);                 \
-        __typeof__ (b) _b = (b);                \
-        _a > _b ? _b : _a; })
 #endif
 
 
 #include "server/client.h"
 #include "utils/list.h"
+#include "utils/utils.h"
 
 
 static int clients_initialized = 0;
@@ -75,7 +72,6 @@ void client_module_exit(void)
 /**
  * Charger les clients disponibles.
  */
-
 
 #ifdef _WIN32
 static void iter_on_directory(void (*callback)(int id, const char* path))
@@ -173,7 +169,6 @@ static void client_load_available_clients(void)
 
     iter_on_directory(count_client);
     iter_on_directory(load_client);
-
 }
 
 /**
